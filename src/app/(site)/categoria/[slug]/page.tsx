@@ -183,9 +183,6 @@ export default async function CategoriaPage({ params, searchParams }: Props) {
           {/* ── SIDEBAR DIREITA 320px ── */}
           <div style={{ position: 'sticky', top: 80, display: 'flex', flexDirection: 'column', gap: 24 }}>
 
-            {/* MPU */}
-            <RotatingAd slotId="leaderboard" height={250} />
-
             {/* Newsletter */}
             <div style={{ background: '#0a7a6b', borderRadius: 12, padding: 20, color: 'white' }}>
               <div style={{ fontFamily: 'monospace', fontSize: 10, opacity: 0.8, letterSpacing: '0.1em', marginBottom: 6 }}>NEWSLETTER · TODA MANHÃ 7H</div>
