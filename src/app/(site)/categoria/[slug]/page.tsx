@@ -195,9 +195,6 @@ export default async function CategoriaPage({ params, searchParams }: Props) {
             {/* Mais lidas */}
             <MaisLidas />
 
-            {/* Half Page */}
-            <RotatingAd slotId="leaderboard" height={600} />
-
             {/* Últimas */}
             <UltimasFeed />
 
