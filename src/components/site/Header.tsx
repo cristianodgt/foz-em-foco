@@ -66,12 +66,12 @@ export default function Header() {
 
       {/* Mobile scroll nav */}
       <style>{`
-        .mobile-nav-bar { display: none; }
+        .mobile-nav-bar { display: none !important; }
         .mobile-nav-scroll { display: flex; overflow-x: auto; scrollbar-width: none; }
         .mobile-nav-scroll::-webkit-scrollbar { display: none; }
-        @media (max-width: 899px) { .mobile-nav-bar { display: block; border-top: 1px solid var(--border); } }
+        @media (max-width: 900px) { .mobile-nav-bar { display: block !important; border-top: 1px solid var(--border); } }
       `}</style>
-      <div className="mobile-nav-bar">
+      <div className="mobile-nav-bar" style={{ display: 'none' }}>
         <div className="mobile-nav-scroll">
           {[{ href: "/", label: "Home" }, ...navItems].map(({ href, label }) => (
             <Link key={href} href={href} style={{

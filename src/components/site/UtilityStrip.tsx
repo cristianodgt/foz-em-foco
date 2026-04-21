@@ -13,7 +13,7 @@ const items = [
 
 export default function UtilityStrip() {
   return (
-    <div style={{ background: "#111", color: "rgba(255,255,255,0.75)", height: 32, overflow: "hidden", position: "relative" }}>
+    <div style={{ background: "#111", color: "rgba(255,255,255,0.75)", height: 32, overflow: "hidden", position: "relative", width: "100%" }}>
       <div style={{
         display: "flex", alignItems: "center", height: "100%",
         animation: "utilityTicker 40s linear infinite",
