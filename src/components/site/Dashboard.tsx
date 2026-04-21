@@ -37,7 +37,7 @@ export default function Dashboard() {
           </div>
           <button className="btn-ghost btn-sm" style={{ fontSize: 12 }}>personalizar ⚙</button>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(6,1fr)", gap: 12 }}>
+        <div className="dashboard-grid" style={{ display: "grid", gridTemplateColumns: "repeat(6,1fr)", gap: 12 }}>
           {widgets.map(({ label, val, sub, color, extra, trend }) => (
             <div key={label} style={{
               background: "white", borderRadius: "var(--r-l)",

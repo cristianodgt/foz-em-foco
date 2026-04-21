@@ -154,6 +154,8 @@ button { cursor: pointer; font-family: var(--font-sans); border: none; }
   transition: box-shadow .2s ease, transform .2s ease;
 }
 .card:hover { box-shadow: var(--shadow-hover); transform: translateY(-2px); }
+.explore-card { background: white; border: 1px solid var(--border); border-radius: var(--r-l); padding: 20px; cursor: pointer; box-shadow: var(--shadow-s); transition: box-shadow .2s, transform .2s; }
+.explore-card:hover { box-shadow: var(--shadow-hover); transform: translateY(-2px); }
 
 /* ── Buttons ── */
 .btn {
@@ -211,6 +213,33 @@ button { cursor: pointer; font-family: var(--font-sans); border: none; }
 }
 .input:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(10,122,107,.12); }
 .input::placeholder { color: var(--muted); }
+
+/* ── Main + Sidebar grid ── */
+.grid-main-side {
+  display: grid;
+  grid-template-columns: 1fr var(--col-side);
+  gap: 40px;
+  align-items: start;
+}
+@media (max-width: 1024px) {
+  .grid-main-side { grid-template-columns: 1fr; }
+}
+
+/* ── Table ── */
+.table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.table th {
+  text-align: left; padding: 10px 14px;
+  background: var(--paper-2); color: var(--ink-3);
+  font-family: var(--font-mono); font-size: 11px;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  border-bottom: 2px solid var(--border);
+}
+.table td { padding: 11px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.table tr:last-child td { border-bottom: none; }
+.table tr:hover td { background: var(--paper-2); }
+
+/* ── Sticky sidebar ── */
+.sidebar-sticky { position: sticky; top: 80px; display: flex; flex-direction: column; gap: 24px; }
 
 /* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }

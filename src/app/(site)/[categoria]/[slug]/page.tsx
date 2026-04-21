@@ -4,13 +4,9 @@ import { buildMetadata, buildArticleJsonLd } from "@/lib/seo";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import Badge from "@/components/ui/Badge";
-import NewsCard from "@/components/site/NewsCard";
-import AdSlot from "@/components/site/AdSlot";
 import NewsletterCTA from "@/components/site/NewsletterCTA";
-import CommentSection from "@/components/site/CommentSection";
-import ReadingProgress from "@/components/site/ReadingProgress";
-import { Eye, Clock, Calendar, ChevronRight } from "lucide-react";
+import SidebarMostRead from "@/components/site/SidebarMostRead";
+import SidebarLatest from "@/components/site/SidebarLatest";
 
 interface Props {
   params: Promise<{ categoria: string; slug: string }>;
@@ -34,198 +30,213 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { categoria, slug } = await params;
-  const article = await prisma.article.findUnique({
-    where: { slug },
-    include: { category: true, author: true },
-  });
-  if (!article || article.category.slug !== categoria) return {};
-  return buildMetadata({
-    title: article.metaTitle ?? article.title,
-    description: article.metaDescription ?? article.lead ?? "",
-    image: article.ogImage ?? article.imageUrl ?? undefined,
-    path: `/${categoria}/${slug}`,
-    type: "article",
-  });
+  try {
+    const article = await prisma.article.findUnique({
+      where: { slug },
+      include: { category: true, author: true },
+    });
+    if (!article || article.category.slug !== categoria) return {};
+    return buildMetadata({
+      title: article.metaTitle ?? article.title,
+      description: article.metaDescription ?? article.lead ?? "",
+      image: article.ogImage ?? article.imageUrl ?? undefined,
+      path: `/${categoria}/${slug}`,
+      type: "article",
+    });
+  } catch {
+    return {};
+  }
 }
 
 function formatDate(date: Date | null) {
   if (!date) return "";
   return new Intl.DateTimeFormat("pt-BR", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
+    day: "numeric", month: "long", year: "numeric",
+    hour: "2-digit", minute: "2-digit",
   }).format(new Date(date));
+}
+
+function timeAgo(date: Date | null) {
+  if (!date) return "";
+  const diff = Date.now() - new Date(date).getTime();
+  const h = Math.floor(diff / 3600000);
+  if (h < 1) return "há menos de 1h";
+  if (h < 24) return `há ${h}h`;
+  return `há ${Math.floor(h / 24)}d`;
 }
 
 export default async function ArticlePage({ params }: Props) {
   const { categoria, slug } = await params;
 
-  const article = await prisma.article.findUnique({
-    where: { slug },
-    include: {
-      category: true,
-      author: true,
-      tags: true,
-      comments: {
-        where: { status: "aprovado" },
-        orderBy: { createdAt: "asc" },
-      },
-    },
-  });
+  let article = null;
+  let related: Awaited<ReturnType<typeof prisma.article.findMany>> = [];
+  let mostRead: Awaited<ReturnType<typeof prisma.article.findMany>> = [];
+  let latest: Awaited<ReturnType<typeof prisma.article.findMany>> = [];
+
+  try {
+    article = await prisma.article.findUnique({
+      where: { slug },
+      include: { category: true, author: true, tags: true, comments: { where: { status: "aprovado" }, orderBy: { createdAt: "asc" } } },
+    });
+
+    if (article) {
+      prisma.article.update({ where: { id: article.id }, data: { views: { increment: 1 } } }).catch(() => {});
+      [related, mostRead, latest] = await Promise.all([
+        prisma.article.findMany({ where: { status: "publicado", categoryId: article.categoryId, id: { not: article.id } }, include: { category: true }, orderBy: { publishedAt: "desc" }, take: 4 }),
+        prisma.article.findMany({ where: { status: "publicado" }, orderBy: { views: "desc" }, include: { category: true }, take: 5 }),
+        prisma.article.findMany({ where: { status: "publicado" }, include: { category: true }, orderBy: { publishedAt: "desc" }, take: 7 }),
+      ]);
+    }
+  } catch (e) {
+    console.error("ARTICLE_ERROR", e);
+  }
 
   if (!article || article.category.slug !== categoria || article.status !== "publicado") {
     notFound();
   }
 
-  // Increment views
-  prisma.article.update({ where: { id: article.id }, data: { views: { increment: 1 } } }).catch(() => {});
-
-  // Related articles
-  const related = await prisma.article.findMany({
-    where: { status: "publicado", categoryId: article.categoryId, id: { not: article.id } },
-    include: { category: true },
-    orderBy: { publishedAt: "desc" },
-    take: 3,
-  });
-
   const jsonLd = article.publishedAt && article.author
-    ? buildArticleJsonLd({
-        title: article.title,
-        description: article.lead ?? "",
-        image: article.imageUrl ?? "",
-        publishedAt: article.publishedAt,
-        updatedAt: article.updatedAt,
-        authorName: article.author.name ?? "Redação",
-        path: `/${categoria}/${slug}`,
-      })
+    ? buildArticleJsonLd({ title: article.title, description: article.lead ?? "", image: article.imageUrl ?? "", publishedAt: article.publishedAt, updatedAt: article.updatedAt, authorName: article.author.name ?? "Redação", path: `/${categoria}/${slug}` })
     : null;
 
   return (
     <>
-      {jsonLd && (
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      )}
-      <ReadingProgress />
+      {jsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />}
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-          {/* Article */}
-          <article className="lg:col-span-2">
+      <div className="container" style={{ padding: "24px 20px" }}>
+        {/* Leaderboard ad */}
+        <div style={{ background: "var(--ad-bg)", border: "1px dashed var(--ad-border)", borderRadius: "var(--r-m)", height: 80, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 28 }}>
+          <span className="t-mono" style={{ color: "var(--ad)", fontSize: 11 }}>PUBLICIDADE · 970×90</span>
+        </div>
+
+        <div className="grid-main-side">
+          <article>
             {/* Breadcrumb */}
-            <nav className="flex items-center gap-1 text-xs text-muted mb-4 font-mono">
-              <Link href="/" className="hover:text-teal">Home</Link>
-              <ChevronRight size={12} />
-              <Link href={`/categoria/${article.category.slug}`} className="hover:text-teal">
-                {article.category.name}
-              </Link>
-              <ChevronRight size={12} />
-              <span className="text-ink-2 line-clamp-1">{article.title}</span>
-            </nav>
+            <div className="t-mono color-muted" style={{ marginBottom: 10, fontSize: 11 }}>
+              <Link href="/" style={{ color: "var(--teal)" }}>Home</Link>{" › "}
+              <Link href={`/categoria/${article.category.slug}`} style={{ color: "var(--teal)" }}>{article.category.name}</Link>{" › "}
+              <span>{article.title.slice(0, 55)}{article.title.length > 55 ? "…" : ""}</span>
+            </div>
 
-            <Badge category={article.category.slug} label={article.category.name} className="mb-3" />
+            <div className="row" style={{ gap: 8, marginBottom: 12 }}>
+              <span className={`cat-tag ${article.category.slug}`}>{article.category.name}</span>
+              {article.featured && <span className="cat-tag" style={{ background: "#f0faf9", color: "var(--teal)", border: "1px solid var(--teal-light)" }}>Destaque</span>}
+            </div>
 
-            <h1 className="font-serif text-3xl sm:text-4xl font-bold text-ink leading-tight mb-4">
-              {article.title}
-            </h1>
+            <h1 className="t-h1" style={{ marginBottom: 14, lineHeight: 1.15 }}>{article.title}</h1>
 
             {article.lead && (
-              <p className="text-lg text-ink-2 italic leading-relaxed border-l-4 border-teal pl-4 mb-6">
+              <p style={{ fontSize: 18, lineHeight: 1.6, color: "var(--ink-2)", borderLeft: "3px solid var(--teal)", paddingLeft: 16, marginBottom: 20, fontStyle: "italic" }}>
                 {article.lead}
               </p>
             )}
 
             {/* Meta */}
-            <div className="flex flex-wrap items-center gap-4 text-sm text-muted mb-6 pb-6 border-b border-border">
-              <div className="flex items-center gap-2">
-                {article.author.image && (
-                  <Image src={article.author.image} alt={article.author.name ?? ""} width={32} height={32} className="rounded-full" />
-                )}
-                <span className="font-medium text-ink-2">{article.author.name ?? "Redação"}</span>
+            <div className="row" style={{ gap: 16, paddingBottom: 18, borderBottom: "1px solid var(--border)", marginBottom: 24, flexWrap: "wrap" }}>
+              <div className="row" style={{ gap: 8 }}>
+                <div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--teal-light)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: "var(--teal)" }}>{(article.author.name ?? "R")[0]}</span>
+                </div>
+                <Link href={`/autor/${article.author.id}`} style={{ fontSize: 14, fontWeight: 600, color: "var(--ink-2)" }}>
+                  {article.author.name ?? "Redação"}
+                </Link>
               </div>
-              {article.publishedAt && (
-                <span className="flex items-center gap-1 font-mono text-xs">
-                  <Calendar size={12} />
-                  {formatDate(article.publishedAt)}
-                </span>
-              )}
-              <span className="flex items-center gap-1 font-mono text-xs">
-                <Clock size={12} /> {article.readTime} min de leitura
-              </span>
-              <span className="flex items-center gap-1 font-mono text-xs">
-                <Eye size={12} /> {article.views.toLocaleString()} views
-              </span>
+              {article.publishedAt && <span className="t-mono color-muted" style={{ fontSize: 11 }}>{formatDate(article.publishedAt)}</span>}
+              <span className="t-mono color-muted" style={{ fontSize: 11 }}>{article.readTime} min de leitura</span>
+              <span className="t-mono color-muted" style={{ fontSize: 11 }}>{article.views.toLocaleString()} views</span>
             </div>
 
             {/* Cover image */}
-            {article.imageUrl && (
-              <div className="relative w-full h-72 sm:h-96 rounded-xl overflow-hidden mb-6">
-                <Image src={article.imageUrl} alt={article.title} fill className="object-cover" priority />
+            {article.imageUrl ? (
+              <div style={{ position: "relative", aspectRatio: "16/7", width: "100%", overflow: "hidden", borderRadius: "var(--r-l)", marginBottom: 24 }}>
+                <Image src={article.imageUrl} alt={article.title} fill style={{ objectFit: "cover" }} priority />
                 {article.imageCaption && (
-                  <p className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs px-4 py-2 font-mono">
-                    {article.imageCaption}
-                  </p>
+                  <p style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(0,0,0,.6)", color: "white", fontSize: 12, padding: "6px 14px", fontFamily: "var(--font-mono)" }}>{article.imageCaption}</p>
                 )}
               </div>
+            ) : (
+              <div className="imgph" data-label="foto da matéria" style={{ aspectRatio: "16/7", width: "100%", borderRadius: "var(--r-l)", marginBottom: 24 }} />
             )}
 
             {/* Body */}
             <div
-              className="prose prose-lg max-w-none prose-headings:font-serif prose-headings:text-ink prose-a:text-teal prose-a:no-underline hover:prose-a:underline prose-blockquote:border-teal prose-blockquote:text-ink-2"
+              className="prose prose-lg max-w-none"
+              style={{ fontFamily: "var(--font-sans)", fontSize: 17, lineHeight: 1.85, color: "var(--ink-2)" }}
               dangerouslySetInnerHTML={{ __html: article.body }}
             />
 
             {/* Tags */}
             {article.tags.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-8 pt-6 border-t border-border">
+              <div className="row" style={{ gap: 8, marginTop: 32, paddingTop: 24, borderTop: "1px solid var(--border)", flexWrap: "wrap" }}>
                 {article.tags.map((tag) => (
-                  <Link
-                    key={tag.id}
-                    href={`/busca?q=${tag.name}`}
-                    className="text-xs px-3 py-1 bg-paper border border-border rounded-full hover:border-teal hover:text-teal transition-colors font-mono"
-                  >
-                    #{tag.name}
+                  <Link key={tag.id} href={`/busca?q=${encodeURIComponent(tag.name)}`} className="pill">#{tag.name}</Link>
+                ))}
+              </div>
+            )}
+
+            <div style={{ marginTop: 40, marginBottom: 40 }}><NewsletterCTA /></div>
+
+            {/* Comments */}
+            <div style={{ marginTop: 32 }}>
+              <div className="sec-label bold" style={{ marginBottom: 20 }}>Comentários ({article.comments.length})</div>
+              {article.comments.length === 0 ? (
+                <div style={{ background: "var(--paper-2)", borderRadius: "var(--r-l)", padding: 32, textAlign: "center", color: "var(--muted)", fontFamily: "var(--font-mono)", fontSize: 13 }}>
+                  Seja o primeiro a comentar
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  {article.comments.map((c) => (
+                    <div key={c.id} style={{ background: "white", border: "1px solid var(--border)", borderRadius: "var(--r-l)", padding: "16px 20px" }}>
+                      <div className="row" style={{ gap: 10, marginBottom: 8 }}>
+                        <div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--paper-2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          <span style={{ fontWeight: 700, color: "var(--ink-3)", fontSize: 13 }}>{c.name[0]}</span>
+                        </div>
+                        <strong style={{ fontSize: 14 }}>{c.name}</strong>
+                        <span className="t-mono color-muted" style={{ fontSize: 11, marginLeft: "auto" }}>{timeAgo(c.createdAt)}</span>
+                      </div>
+                      <p style={{ fontSize: 14, lineHeight: 1.6, color: "var(--ink-2)", margin: 0 }}>{c.body}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div style={{ marginTop: 20, background: "white", border: "1px solid var(--border)", borderRadius: "var(--r-l)", padding: 20 }}>
+                <div className="t-h4" style={{ marginBottom: 14 }}>Deixe um comentário</div>
+                <input className="input" placeholder="Seu nome" style={{ marginBottom: 10 }} />
+                <textarea className="input" placeholder="Seu comentário..." rows={4} style={{ resize: "vertical", marginBottom: 12 }} />
+                <button className="btn btn-primary">Enviar comentário →</button>
+              </div>
+            </div>
+          </article>
+
+          {/* Sidebar */}
+          <aside className="sidebar-sticky">
+            <div style={{ background: "var(--ad-bg)", border: "1px dashed var(--ad-border)", borderRadius: "var(--r-m)", height: 250, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <span className="t-mono" style={{ color: "var(--ad)", fontSize: 11 }}>PUBLICIDADE · 300×250</span>
+            </div>
+
+            {related.length > 0 && (
+              <div style={{ background: "white", border: "1px solid var(--border)", borderRadius: "var(--r-l)", overflow: "hidden" }}>
+                <div style={{ padding: "14px 16px", borderBottom: "1px solid var(--border)" }}><span className="t-h4">Relacionadas</span></div>
+                {related.map((a, i) => (
+                  <Link key={a.id} href={`/${(a as typeof article & { category: { slug: string } }).category.slug}/${a.slug}`}>
+                    <div style={{ padding: "12px 16px", borderBottom: i < related.length - 1 ? "1px solid var(--border)" : "none", cursor: "pointer" }}>
+                      <span className={`cat-tag ${(a as typeof article & { category: { slug: string; name: string } }).category.slug}`} style={{ marginBottom: 6, display: "inline-block" }}>
+                        {(a as typeof article & { category: { name: string } }).category.name}
+                      </span>
+                      <div className="t-small truncate-2" style={{ fontFamily: "var(--font-serif)", fontSize: 14, lineHeight: 1.3 }}>{a.title}</div>
+                    </div>
                   </Link>
                 ))}
               </div>
             )}
 
-            {/* Newsletter CTA inline */}
-            <div className="my-10">
-              <NewsletterCTA />
+            <SidebarMostRead articles={mostRead as unknown as Parameters<typeof SidebarMostRead>[0]["articles"]} />
+            <NewsletterCTA />
+            <SidebarLatest articles={latest as unknown as Parameters<typeof SidebarLatest>[0]["articles"]} />
+
+            <div style={{ background: "var(--ad-bg)", border: "1px dashed var(--ad-border)", borderRadius: "var(--r-m)", height: 300, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <span className="t-mono" style={{ color: "var(--ad)", fontSize: 11 }}>PUBLICIDADE · 300×600</span>
             </div>
-
-            {/* Comments */}
-            <CommentSection articleId={article.id} comments={article.comments} />
-          </article>
-
-          {/* Sidebar */}
-          <aside className="flex flex-col gap-6">
-            <AdSlot slotId="mpu" />
-
-            {related.length > 0 && (
-              <div>
-                <h3 className="font-semibold text-sm uppercase tracking-widest text-muted mb-4 border-b border-border pb-2">
-                  Relacionados
-                </h3>
-                <div className="flex flex-col gap-4">
-                  {related.map((a) => (
-                    <NewsCard
-                      key={a.id}
-                      title={a.title}
-                      category={a.category.name}
-                      categorySlug={a.category.slug}
-                      slug={a.slug}
-                      imageUrl={a.imageUrl ?? undefined}
-                      variant="horizontal"
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <AdSlot slotId="halfpage" />
           </aside>
         </div>
       </div>

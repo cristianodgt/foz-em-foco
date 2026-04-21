@@ -1,215 +1,152 @@
-import { prisma } from "@/lib/prisma";
-import { buildMetadata } from "@/lib/seo";
-import type { Metadata } from "next";
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
-import { MapPin, Star, Phone, MessageCircle, ExternalLink } from "lucide-react";
-import Badge from "@/components/ui/Badge";
 
-export const dynamic = "force-dynamic";
+const CATS = [
+  ["Restaurantes",312],["Hotéis",87],["Saúde",198],["Compras",265],["Educação",143],
+  ["Veículos",91],["Beleza",184],["Serviços",220],["Turismo",118],["Imóveis",76],
+] as [string, number][];
 
-export const metadata: Metadata = buildMetadata({
-  title: "Guia Comercial — Foz do Iguaçu",
-  description: "Encontre restaurantes, hotéis, lojas e serviços em Foz do Iguaçu. Guia completo de negócios locais.",
-  path: "/guia",
-});
+const BUSINESSES = [
+  { tier:"OURO",  name:"Rafain Churrascaria",    cat:"Restaurante", rating:"4.8", reviews:1243, loc:"Vila Yolanda", feat:["Reserva online","Estacionamento","AC"], price:"R$80–R$150/pessoa", open:true },
+  { tier:"OURO",  name:"Tempero da Terra",        cat:"Restaurante", rating:"4.7", reviews:892,  loc:"Centro",       feat:["Petiscos","Cardápio executivo"],         price:"R$35–R$65/pessoa", open:true },
+  { tier:"PRATA", name:"Churrascaria Gaúcha",     cat:"Churrascaria",rating:"4.5", reviews:623,  loc:"Morumbi",      feat:["Rodízio","Estacionamento"],              price:"R$55–R$80/pessoa", open:true },
+  { tier:"PRATA", name:"Restaurante Recanto",     cat:"Restaurante", rating:"4.4", reviews:412,  loc:"Vila A",       feat:["Delivery"],                             price:"R$25–R$50",        open:false },
+  { tier:"",      name:"Bar do Tião",             cat:"Bar",         rating:"4.3", reviews:289,  loc:"Centro",       feat:["Chope artesanal"],                      price:"R$15–R$35",        open:true },
+  { tier:"",      name:"Lanchonete Boa Hora",     cat:"Lanchonete",  rating:"4.1", reviews:154,  loc:"Porto Meira",  feat:["Delivery"],                             price:"R$10–R$20",        open:true },
+];
 
-const PER_PAGE = 20;
+const TIER_COLOR: Record<string, string> = { OURO:"#d4a017", PRATA:"#888" };
 
-interface Props {
-  searchParams: Promise<{ q?: string; categoria?: string; page?: string }>;
-}
-
-const PLAN_BADGE: Record<string, string> = {
-  ouro: "bg-yellow-100 text-yellow-800 border border-yellow-300",
-  prata: "bg-gray-100 text-gray-700 border border-gray-300",
-  basico: "",
-};
-
-const PLAN_LABEL: Record<string, string> = {
-  ouro: "⭐ Ouro",
-  prata: "Prata",
-  basico: "Básico",
-};
-
-function StarRating({ rating, count }: { rating: number; count: number }) {
-  return (
-    <span className="flex items-center gap-1 text-xs font-mono text-muted">
-      <Star size={12} className="text-yellow-400 fill-yellow-400" />
-      {rating.toFixed(1)} ({count})
-    </span>
-  );
-}
-
-export default async function GuiaPage({ searchParams }: Props) {
-  const { q, categoria, page: pageStr } = await searchParams;
-  const page = Math.max(1, parseInt(pageStr ?? "1", 10));
-
-  const categories = await prisma.businessCategory.findMany({ orderBy: { name: "asc" } });
-
-  const whereClause: Record<string, unknown> = { active: true };
-  if (categoria) whereClause.category = { slug: categoria };
-  if (q) {
-    whereClause.OR = [
-      { name: { contains: q, mode: "insensitive" } },
-      { description: { contains: q, mode: "insensitive" } },
-      { bairro: { contains: q, mode: "insensitive" } },
-    ];
-  }
-
-  const [businesses, total] = await Promise.all([
-    prisma.business.findMany({
-      where: whereClause as any,
-      include: { category: true, photos: { take: 1, orderBy: { order: "asc" } }, reviews: { where: { approved: true } } },
-      orderBy: [{ plan: "desc" }, { name: "asc" }],
-      skip: (page - 1) * PER_PAGE,
-      take: PER_PAGE,
-    }),
-    prisma.business.count({ where: whereClause as any }),
-  ]);
-
-  const totalPages = Math.ceil(total / PER_PAGE);
+export default function GuiaPage() {
+  const [activeCategory, setActiveCategory] = useState("Restaurantes");
+  const [search, setSearch] = useState("");
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      <div className="mb-6">
-        <h1 className="font-serif text-4xl font-bold text-ink">Guia Comercial</h1>
-        <p className="text-muted mt-1">Encontre negócios em Foz do Iguaçu e tríplice fronteira</p>
+    <>
+      {/* Hero */}
+      <div style={{ background: "var(--ink)", padding: "32px 0" }}>
+        <div className="container">
+          <h1 style={{ fontFamily: "var(--font-serif)", fontSize: "clamp(28px,4vw,44px)", color: "white", marginBottom: 6 }}>Guia de Foz &amp; Região</h1>
+          <div className="t-mono" style={{ color: "rgba(255,255,255,.5)", marginBottom: 20, fontSize: 12 }}>1.847 negócios · 12 mil avaliações verificadas · atualizado diariamente</div>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <input
+              className="input"
+              placeholder="Buscar negócio, bairro ou categoria…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              style={{ flex: 1, minWidth: 280, maxWidth: 480 }}
+            />
+            <button className="btn btn-primary">Buscar</button>
+            <button className="btn btn-sm" style={{ background: "rgba(255,255,255,.1)", color: "white", border: "1px solid rgba(255,255,255,.15)" }}>Próximo a mim</button>
+          </div>
+        </div>
       </div>
 
-      {/* Search + filters */}
-      <form className="flex flex-col sm:flex-row gap-3 mb-8" method="GET">
-        <input
-          name="q"
-          defaultValue={q}
-          placeholder="Buscar por nome, bairro, serviço..."
-          className="flex-1 text-sm border border-border rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-teal/30"
-        />
-        <select
-          name="categoria"
-          defaultValue={categoria ?? ""}
-          className="text-sm border border-border rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-teal/30 bg-white"
-        >
-          <option value="">Todas as categorias</option>
-          {categories.map((c) => (
-            <option key={c.id} value={c.slug}>{c.name}</option>
-          ))}
-        </select>
-        <button type="submit" className="bg-teal text-white font-semibold px-5 py-2.5 rounded-lg hover:bg-teal-dark transition-colors text-sm">
-          Buscar
-        </button>
-      </form>
-
-      {/* Category pills */}
-      <div className="flex gap-2 overflow-x-auto scrollbar-none pb-2 mb-6">
-        <Link href="/guia" className={`shrink-0 px-3 py-1.5 rounded-full text-sm border transition-colors ${!categoria ? "bg-teal text-white border-teal" : "border-border hover:border-teal hover:text-teal"}`}>
-          Todos
-        </Link>
-        {categories.map((c) => (
-          <Link
-            key={c.id}
-            href={`/guia?${categoria === c.slug ? "" : `categoria=${c.slug}`}${q ? `&q=${q}` : ""}`}
-            className={`shrink-0 px-3 py-1.5 rounded-full text-sm border transition-colors ${categoria === c.slug ? "bg-teal text-white border-teal" : "border-border hover:border-teal hover:text-teal"}`}
-          >
-            {c.icon} {c.name}
-          </Link>
-        ))}
-      </div>
-
-      <p className="text-sm text-muted mb-5 font-mono">{total} resultado{total !== 1 ? "s" : ""}</p>
-
-      {/* Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-        {businesses.map((b) => {
-          const avgRating = b.reviews.length > 0
-            ? b.reviews.reduce((s, r) => s + r.rating, 0) / b.reviews.length
-            : 0;
-          const photo = b.photos[0];
-
-          return (
-            <Link
-              key={b.id}
-              href={`/guia/${b.category.slug}/${b.slug}`}
-              className={`group block rounded-xl overflow-hidden border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md bg-white ${b.plan === "ouro" ? "border-yellow-300" : "border-border"}`}
+      <div className="container" style={{ padding: "32px 20px" }}>
+        {/* Category grid */}
+        <div className="sec-label bold mb-m">Categorias</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 8, marginBottom: 24 }}>
+          {CATS.map(([n, c]) => (
+            <button
+              key={n}
+              onClick={() => setActiveCategory(n)}
+              style={{
+                padding: "10px 8px", borderRadius: "var(--r-m)", border: "1.5px solid",
+                borderColor: activeCategory === n ? "var(--teal)" : "var(--border)",
+                background: activeCategory === n ? "var(--teal-pale)" : "white",
+                cursor: "pointer", textAlign: "center",
+              }}
             >
-              {/* Photo */}
-              <div className="relative h-40 bg-gray-100">
-                {photo ? (
-                  <Image src={photo.url} alt={b.name} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />
-                ) : (
-                  <div className="h-full flex items-center justify-center text-3xl">🏪</div>
-                )}
-                {b.plan !== "basico" && (
-                  <span className={`absolute top-2 right-2 text-xs font-bold px-2 py-0.5 rounded-full ${PLAN_BADGE[b.plan]}`}>
-                    {PLAN_LABEL[b.plan]}
-                  </span>
-                )}
-              </div>
+              <div style={{ fontWeight: 600, fontSize: 14, color: activeCategory === n ? "var(--teal)" : "var(--ink)" }}>{n}</div>
+              <div className="t-mono color-muted" style={{ fontSize: 10, marginTop: 2 }}>{c} negócios</div>
+            </button>
+          ))}
+        </div>
 
-              <div className="p-4">
-                <p className="text-xs text-muted font-mono mb-1">{b.category.name}</p>
-                <h3 className="font-semibold text-ink group-hover:text-teal transition-colors line-clamp-1">{b.name}</h3>
+        <div className="grid-main-side">
+          {/* Business list */}
+          <div>
+            <div className="sec-label bold" style={{ marginBottom: 12 }}>{activeCategory} em Foz</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {BUSINESSES.map((b) => (
+                <div key={b.name} style={{
+                  background: "white", border: "1.5px solid",
+                  borderColor: b.tier === "OURO" ? "#e8c060" : "var(--border)",
+                  borderRadius: "var(--r-l)", padding: "16px 20px",
+                  display: "flex", gap: 16, alignItems: "flex-start",
+                  boxShadow: "var(--shadow-s)",
+                }}>
+                  {/* Thumbnail placeholder */}
+                  <div className="imgph" data-label="foto" style={{ width: 80, height: 80, flexShrink: 0, borderRadius: "var(--r-m)" }} />
 
-                {b.reviews.length > 0 && (
-                  <div className="mt-1">
-                    <StarRating rating={avgRating} count={b.reviews.length} />
+                  <div style={{ flex: 1 }}>
+                    <div className="row" style={{ gap: 8, marginBottom: 4 }}>
+                      {b.tier && (
+                        <span className="t-mono" style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", color: TIER_COLOR[b.tier], background: b.tier === "OURO" ? "#fef9ec" : "#f5f5f5", padding: "2px 7px", borderRadius: 3 }}>
+                          {b.tier}
+                        </span>
+                      )}
+                      <span style={{ fontWeight: 700, fontSize: 16 }}>{b.name}</span>
+                      <span className="t-mono color-muted" style={{ fontSize: 11 }}>{b.cat}</span>
+                    </div>
+                    <div className="row" style={{ gap: 12, marginBottom: 8 }}>
+                      <span style={{ color: "#f59e0b", fontSize: 14 }}>{"★".repeat(Math.round(parseFloat(b.rating)))}{"☆".repeat(5 - Math.round(parseFloat(b.rating)))}</span>
+                      <span style={{ fontWeight: 700, fontSize: 14 }}>{b.rating}</span>
+                      <span className="t-mono color-muted" style={{ fontSize: 11 }}>({b.reviews.toLocaleString()} avaliações)</span>
+                      <span className="t-mono color-muted" style={{ fontSize: 11 }}>📍 {b.loc}</span>
+                    </div>
+                    <div className="row" style={{ gap: 6, flexWrap: "wrap" }}>
+                      {b.feat.map(f => <span key={f} className="pill">{f}</span>)}
+                    </div>
                   </div>
-                )}
 
-                {b.bairro && (
-                  <p className="flex items-center gap-1 text-xs text-muted mt-2">
-                    <MapPin size={10} /> {b.bairro}
-                  </p>
-                )}
-
-                <div className="flex gap-2 mt-3">
-                  {b.phone && (
-                    <a
-                      href={`tel:${b.phone}`}
-                      onClick={(e) => e.stopPropagation()}
-                      className="flex items-center gap-1 text-xs border border-border rounded px-2 py-1 hover:border-teal hover:text-teal transition-colors"
-                    >
-                      <Phone size={10} /> Ligar
-                    </a>
-                  )}
-                  {b.whatsapp && (
-                    <a
-                      href={`https://wa.me/${b.whatsapp.replace(/\D/g, "")}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="flex items-center gap-1 text-xs border border-green-300 text-green-700 rounded px-2 py-1 hover:bg-green-50 transition-colors"
-                    >
-                      <MessageCircle size={10} /> WhatsApp
-                    </a>
-                  )}
+                  <div style={{ textAlign: "right", flexShrink: 0 }}>
+                    <div style={{ fontSize: 12, color: b.open ? "var(--success)" : "var(--danger)", fontWeight: 600, marginBottom: 4, fontFamily: "var(--font-mono)" }}>
+                      {b.open ? "● Aberto" : "○ Fechado"}
+                    </div>
+                    <div className="t-mono color-muted" style={{ fontSize: 11, marginBottom: 10 }}>{b.price}</div>
+                    <button className="btn btn-outline btn-sm">Ver perfil</button>
+                  </div>
                 </div>
-              </div>
-            </Link>
-          );
-        })}
+              ))}
+            </div>
+
+            <div style={{ background: "var(--ad-bg)", border: "1px dashed var(--ad-border)", borderRadius: "var(--r-m)", height: 200, display: "flex", alignItems: "center", justifyContent: "center", marginTop: 24 }}>
+              <span className="t-mono" style={{ color: "var(--ad)", fontSize: 11 }}>PUBLICIDADE · 970×250</span>
+            </div>
+          </div>
+
+          {/* Sidebar */}
+          <aside className="sidebar-sticky">
+            <div style={{ background: "var(--ad-bg)", border: "1px dashed var(--ad-border)", borderRadius: "var(--r-m)", height: 250, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <span className="t-mono" style={{ color: "var(--ad)", fontSize: 11 }}>PUBLICIDADE · 300×250</span>
+            </div>
+
+            <div style={{ background: "white", border: "1px solid var(--border)", borderRadius: "var(--r-l)", padding: 20, boxShadow: "var(--shadow-s)" }}>
+              <div className="t-h4" style={{ marginBottom: 12 }}>Mais avaliados</div>
+              {["Rafain Churrascaria","Hotel Bourbon Cataratas","Parque das Aves","Belmond Das Cataratas","Sky Grill"].map((n, i) => (
+                <div key={n} style={{ display: "flex", gap: 10, alignItems: "center", padding: "8px 0", borderBottom: i < 4 ? "1px solid var(--border)" : "none" }}>
+                  <span style={{ fontFamily: "var(--font-serif)", fontSize: 22, color: "var(--teal)", width: 28, textAlign: "center" }}>{i + 1}</span>
+                  <span style={{ fontSize: 13, fontWeight: 500 }}>{n}</span>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ background: "var(--teal)", color: "white", borderRadius: "var(--r-l)", padding: 20 }}>
+              <div className="t-mono" style={{ fontSize: 10, opacity: .6, marginBottom: 8, letterSpacing: "0.1em" }}>ANUNCIE NO GUIA</div>
+              <div style={{ fontFamily: "var(--font-serif)", fontSize: 20, marginBottom: 6 }}>Destaque seu negócio</div>
+              <div style={{ fontSize: 13, opacity: .85, marginBottom: 14 }}>A partir de R$ 149/mês · média de 1.2k visitas</div>
+              <Link href="/anuncie">
+                <button style={{ background: "white", color: "var(--teal)", border: "none", borderRadius: "var(--r-m)", padding: "10px 20px", fontWeight: 700, fontSize: 13, width: "100%", cursor: "pointer" }}>
+                  Cadastrar meu negócio →
+                </button>
+              </Link>
+            </div>
+          </aside>
+        </div>
       </div>
-
-      {businesses.length === 0 && (
-        <div className="text-center py-20 text-muted">
-          <p className="text-4xl mb-3">🔍</p>
-          <p className="font-medium">Nenhum resultado encontrado</p>
-          <p className="text-sm mt-1">Tente outros termos ou categorias</p>
-        </div>
-      )}
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex justify-center gap-2 mt-10">
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-            <a key={p} href={`?${new URLSearchParams({ ...(q ? { q } : {}), ...(categoria ? { categoria } : {}), page: String(p) })}`}
-              className={`w-9 h-9 flex items-center justify-center rounded text-sm font-medium border transition-colors ${p === page ? "bg-teal text-white border-teal" : "border-border hover:border-teal hover:text-teal"}`}
-            >
-              {p}
-            </a>
-          ))}
-        </div>
-      )}
-    </div>
+    </>
   );
 }

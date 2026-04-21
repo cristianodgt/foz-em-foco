@@ -1,36 +1,52 @@
-export default function UtilityStrip() {
-  const items = [
-    ["Clima",        "28°C ☀",       "white"],
-    ["USD",          "R$ 5,42 ↑",    "#52d9c6"],
-    ["₲",            "R$ 1.380",     "#52d9c6"],
-    ["Amizade",      "35min 🔴",     "#ff7675"],
-    ["Fraternidade", "livre 🟢",     "#55efc4"],
-    ["Cataratas",    "3.040 m³/s",   "white"],
-    ["Gasolina",     "R$ 5,89",      "white"],
-  ] as const;
+"use client";
 
+const items = [
+  { label: "FOZ",          value: "Seg 21 Abr · 14:08", color: "rgba(255,255,255,0.9)" },
+  { label: "Clima",        value: "28°C ☀",             color: "white" },
+  { label: "USD",          value: "R$ 5,42 ↑",          color: "#52d9c6" },
+  { label: "₲",            value: "R$ 1.380",            color: "#52d9c6" },
+  { label: "Amizade",      value: "35min ●",             color: "#ff7675" },
+  { label: "Fraternidade", value: "livre ●",             color: "#55efc4" },
+  { label: "Cataratas",    value: "3.040 m³/s",          color: "white" },
+  { label: "Gasolina",     value: "R$ 5,89",             color: "white" },
+];
+
+export default function UtilityStrip() {
   return (
-    <div style={{ background: "var(--ink)", color: "rgba(255,255,255,0.75)", padding: "6px 0", fontSize: 12 }}>
-      <style>{`.util-scroll{display:flex;align-items:center;gap:24px;overflow-x:auto;scrollbar-width:none}.util-scroll::-webkit-scrollbar{display:none}`}</style>
-      <div className="container">
-        <div className="util-scroll">
-          <span style={{ fontFamily: "var(--font-mono)", flexShrink: 0 }}>
-            <span style={{ color: "rgba(255,255,255,.45)" }}>FOZ · </span>
-            <span style={{ fontWeight: 600, color: "white" }}>Seg 21 Abr · 14:08</span>
-          </span>
-          {items.map(([l, v, c]) => (
-            <span key={l} style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 5 }}>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, opacity: .55, textTransform: "uppercase", letterSpacing: "0.06em" }}>{l}</span>
-              <span style={{ fontWeight: 600, color: c, fontFamily: "var(--font-mono)" }}>{v}</span>
+    <div style={{ background: "#111", color: "rgba(255,255,255,0.75)", height: 32, overflow: "hidden", position: "relative" }}>
+      <div style={{
+        display: "flex", alignItems: "center", height: "100%",
+        animation: "utilityTicker 40s linear infinite",
+        whiteSpace: "nowrap", width: "max-content",
+      }}>
+        {[...items, ...items].map((item, i) => (
+          <span key={i} style={{ display: "inline-flex", alignItems: "center", gap: 5, marginRight: 32, flexShrink: 0 }}>
+            <span style={{
+              fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 400,
+              letterSpacing: "0.06em", color: "rgba(255,255,255,0.45)", textTransform: "uppercase",
+            }}>
+              {item.label}
             </span>
-          ))}
-          <span style={{ marginLeft: "auto", flexShrink: 0, display: "flex", gap: 16 }}>
-            <a href="/newsletter" style={{ color: "rgba(255,255,255,.6)", fontSize: 12 }}>Newsletter</a>
-            <a href="#" style={{ color: "rgba(255,255,255,.6)", fontSize: 12 }}>App</a>
-            <a href="#" style={{ color: "rgba(255,255,255,.6)", fontSize: 12 }}>RSS</a>
+            <span style={{
+              fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 500,
+              color: item.color, letterSpacing: "0.02em",
+            }}>
+              {item.value}
+            </span>
           </span>
-        </div>
+        ))}
       </div>
+
+      {/* Fade nas bordas */}
+      <div style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: 60, background: "linear-gradient(to right, #111, transparent)", pointerEvents: "none" }} />
+      <div style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: 60, background: "linear-gradient(to left, #111, transparent)", pointerEvents: "none" }} />
+
+      <style>{`
+        @keyframes utilityTicker {
+          0%   { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+      `}</style>
     </div>
   );
 }
