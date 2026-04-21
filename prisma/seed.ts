@@ -35,6 +35,11 @@ const ARTIGOS = [
   { title: "Itaipu investe R$ 800 mi em energia solar e eólica para 2026", slug: "itaipu-energia-solar-eolica", cat: "itaipu", readTime: 5, views: 3200 },
   { title: "Novo shopping no bairro Três Lagoas previsto para 2027", slug: "shopping-tres-lagoas-2027", cat: "cidade", readTime: 3, views: 1700 },
   { title: "Corrida das 3 Fronteiras confirma 3 mil atletas em junho", slug: "corrida-3-fronteiras-junho", cat: "esporte", readTime: 3, views: 2100 },
+  { title: "Obras na Avenida JK causam desvios de trânsito até junho", slug: "obras-avenida-jk-desvios", cat: "cidade", lead: "Trecho entre a Rua Edmundo de Barros e a Jorge Sanways ficará interditado durante o dia.", readTime: 3, views: 1200 },
+  { title: "Nova UBS no Morumbi começa atendimento na próxima semana", slug: "nova-ubs-morumbi-atendimento", cat: "cidade", lead: "Unidade vai atender mais de 12 mil moradores dos bairros Morumbi, Três Bandeiras e Jardim América.", readTime: 4, views: 2300 },
+  { title: "Transporte coletivo tem nova linha para o São Francisco", slug: "nova-linha-transporte-sao-francisco", cat: "cidade", lead: "Linha 030 vai operar das 5h30 às 23h com intervalos de 20 minutos nos horários de pico.", readTime: 3, views: 870 },
+  { title: "Licitação para reforma do Mercadão é aberta pela Prefeitura", slug: "licitacao-reforma-mercadao", cat: "cidade", lead: "Obra orçada em R$ 4,8 milhões vai modernizar a estrutura física e os boxes do mercado municipal.", readTime: 4, views: 1560 },
+  { title: "Parque Linear do Rio M'Boicy recebe nova iluminação em LED", slug: "parque-linear-mboicy-iluminacao-led", cat: "cidade", lead: "Instalação de 140 postes de LED vai ampliar a segurança no percurso de 4 km do parque.", readTime: 3, views: 1040 },
 ];
 
 async function main() {
@@ -84,7 +89,7 @@ async function main() {
     });
   }
 
-  console.log(`✓ Seed concluído: ${ARTIGOS.length} artigos, ${CATEGORIES.length} categorias`);
+  console.log(`✓ Seed concluído: ${ARTIGOS.length} artigos, ${CATEGORIES.length} categorias.`);
 }
 
 main().catch(console.error).finally(() => prisma.$disconnect());

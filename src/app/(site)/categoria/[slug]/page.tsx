@@ -83,12 +83,12 @@ export default async function CategoriaPage({ params }: Props) {
               <Link href={`/${hero.category.slug}/${hero.slug}`}>
                 <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', marginBottom: 24, cursor: 'pointer' }}>
                   {hero.imageUrl ? (
-                    <div style={{ position: 'relative', width: '100%', aspectRatio: '2/1', overflow: 'hidden' }}>
+                    <div style={{ position: 'relative', width: '100%', aspectRatio: '2 / 1', maxHeight: 480, overflow: 'hidden' }}>
                       <Image src={hero.imageUrl} alt={hero.title} fill style={{ objectFit: 'cover' }} />
                     </div>
                   ) : (
                     <div style={{
-                      width: '100%', aspectRatio: '2/1',
+                      width: '100%', aspectRatio: '2 / 1', maxHeight: 480,
                       background: '#eef0f4',
                       backgroundImage: 'linear-gradient(135deg,#eef0f4 25%,#e2e5eb 25%,#e2e5eb 50%,#eef0f4 50%,#eef0f4 75%,#e2e5eb 75%)',
                       backgroundSize: '20px 20px',
