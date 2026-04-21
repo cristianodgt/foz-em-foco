@@ -18,32 +18,24 @@ export const metadata: Metadata = buildMetadata({
 });
 
 async function getHomeData() {
-  const [hero, feed, mostRead, breaking] = await Promise.all([
-    prisma.article.findFirst({
-      where: { status: "publicado", featured: true },
-      include: { category: true, author: true },
-      orderBy: { publishedAt: "desc" },
-    }),
-    prisma.article.findMany({
-      where: { status: "publicado" },
-      include: { category: true, author: true },
-      orderBy: { publishedAt: "desc" },
-      take: 9,
-    }),
-    prisma.article.findMany({
-      where: {
-        status: "publicado",
-        publishedAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
-      },
-      orderBy: { views: "desc" },
-      include: { category: true },
-      take: 5,
-    }),
-    prisma.article.findFirst({
-      where: { status: "publicado", featured: true },
-      orderBy: { publishedAt: "desc" },
-    }),
-  ]);
+  const hero = await prisma.article.findFirst({
+    where: { status: "publicado", featured: true },
+    include: { category: true, author: true },
+    orderBy: { publishedAt: "desc" },
+  });
+  const feed = await prisma.article.findMany({
+    where: { status: "publicado" },
+    include: { category: true, author: true },
+    orderBy: { publishedAt: "desc" },
+    take: 9,
+  });
+  const mostRead = await prisma.article.findMany({
+    where: { status: "publicado" },
+    orderBy: { views: "desc" },
+    include: { category: true },
+    take: 5,
+  });
+  const breaking = hero;
 
   const nonHeroFeed = feed.filter((a) => a.id !== hero?.id).slice(0, 6);
   return { hero, feed: nonHeroFeed, mostRead, breaking };
