@@ -53,12 +53,12 @@ export default function EmpregosPage() {
       {/* Hero preto — estilo Guia */}
       <div style={{ background: "#111", padding: "32px 0" }}>
         <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 32px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 16, marginBottom: 20 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16, marginBottom: 20 }}>
             <div>
               <h1 style={{ fontFamily: "DM Serif Display, Georgia, serif", fontSize: "clamp(28px,4vw,44px)", color: "white", marginBottom: 6 }}>Empregos em Foz</h1>
               <div style={{ fontFamily: "monospace", color: "rgba(255,255,255,.5)", fontSize: 12 }}>432 vagas · 89 novas esta semana</div>
             </div>
-            <button style={{ padding: "10px 16px", background: "#0a7a6b", color: "white", border: "none", borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>+ Publicar vaga · R$ 149</button>
+            <button style={{ padding: "10px 16px", background: "#0a7a6b", color: "white", border: "none", borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>+ Publicar vaga</button>
           </div>
 
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
