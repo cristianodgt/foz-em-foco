@@ -19,8 +19,6 @@ const TIER_COLORS: Record<string, { bg: string; color: string; border: string }>
   DESTAQUE: { bg: "#fff8e6", color: "#d4a017", border: "#f0d48c" },
 };
 
-const REGIMES = ["Todos","CLT","PJ","Estágio","Freelance","Remoto"];
-
 const CATEGORIAS = [
   { nome:"Hotelaria",    count: 87 },
   { nome:"Comércio",     count: 64 },
@@ -42,13 +40,11 @@ const MEDIAS = [
 ];
 
 export default function EmpregosPage() {
-  const [activeRegime, setActiveRegime] = useState("Todos");
   const [activeCategoria, setActiveCategoria] = useState<string | null>(null);
   const [search, setSearch]             = useState("");
 
   const filtered = VAGAS.filter(v => {
     if (search && !v.title.toLowerCase().includes(search.toLowerCase()) && !v.empresa.toLowerCase().includes(search.toLowerCase())) return false;
-    if (activeRegime !== "Todos" && !v.regime.includes(activeRegime)) return false;
     return true;
   });
 
@@ -100,26 +96,6 @@ export default function EmpregosPage() {
               <div style={{ fontWeight: 600, fontSize: 14, color: activeCategoria === nome ? "#0a7a6b" : "#111", marginBottom: 2 }}>{nome}</div>
               <div style={{ fontFamily: "monospace", fontSize: 11, color: "#888" }}>{count} vagas</div>
             </button>
-          ))}
-        </div>
-
-        {/* Filtros de tipo — 1 linha, outline simples */}
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 24 }}>
-          {REGIMES.map(r => (
-            <button
-              key={r}
-              onClick={() => setActiveRegime(r)}
-              style={{
-                padding: "8px 16px",
-                border: `1.5px solid ${activeRegime === r ? "#0a7a6b" : "#e2e8f0"}`,
-                borderRadius: 8,
-                background: activeRegime === r ? "#f2faf9" : "white",
-                color: activeRegime === r ? "#0a7a6b" : "#444",
-                fontSize: 13,
-                fontWeight: activeRegime === r ? 600 : 500,
-                cursor: "pointer",
-              }}
-            >{r}</button>
           ))}
         </div>
 
