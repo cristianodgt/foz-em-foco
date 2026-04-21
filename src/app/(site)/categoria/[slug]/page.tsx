@@ -4,46 +4,24 @@ import { buildMetadata } from "@/lib/seo";
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
-import NewsletterCTA from "@/components/site/NewsletterCTA";
+import { CategoryHeader } from "@/components/site/CategoryHeader";
 import SidebarLatest from "@/components/site/SidebarLatest";
 
 interface Props {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ page?: string }>;
 }
 
-const EDITORIAS: Record<string, { label: string; color: string; icon: string; desc: string }> = {
-  cidade:   { label: "Cidade",   color: "var(--cat-cidade)",    icon: "🏙", desc: "Obras, serviços, bairros e o dia a dia de Foz do Iguaçu." },
-  politica: { label: "Política", color: "var(--cat-politica)",  icon: "🏛", desc: "Câmara Municipal, Prefeitura, eleições e poder público." },
-  economia: { label: "Economia", color: "var(--cat-economia)",  icon: "📈", desc: "Comércio, emprego, investimentos e o mercado da região." },
-  cultura:  { label: "Cultura",  color: "var(--cat-cultura)",   icon: "🎭", desc: "Arte, música, patrimônio e identidade da tríplice fronteira." },
-  esporte:  { label: "Esporte",  color: "var(--cat-esporte)",   icon: "⚽", desc: "Futebol, corridas, trilhas e o esporte em Foz." },
-  turismo:  { label: "Turismo",  color: "var(--cat-turismo)",   icon: "🌊", desc: "Cataratas, Itaipu, roteiros e o que fazer na região." },
-  paraguai: { label: "Paraguai", color: "var(--cat-paraguai)",  icon: "🛒", desc: "Compras, câmbio, Ponte Amizade e a fronteira com o Paraguai." },
-  itaipu:   { label: "Itaipu",   color: "var(--cat-itaipu)",    icon: "⚡", desc: "A maior hidrelétrica do mundo e seu impacto na região." },
-  seguranca:{ label: "Segurança",color: "var(--cat-seguranca)", icon: "🔒", desc: "Polícia, crime, trânsito e segurança pública em Foz." },
+const EDITORIAS: Record<string, { label: string; color: string; desc: string }> = {
+  cidade:   { label: "Cidade",    color: "#0a7a6b", desc: "Obras, serviços, bairros e o dia a dia de Foz do Iguaçu." },
+  politica: { label: "Política",  color: "#c0392b", desc: "Câmara Municipal, Prefeitura, eleições e poder público." },
+  economia: { label: "Economia",  color: "#d35400", desc: "Comércio, emprego, investimentos e o mercado da região." },
+  cultura:  { label: "Cultura",   color: "#6c3483", desc: "Arte, música, patrimônio e identidade da tríplice fronteira." },
+  esporte:  { label: "Esporte",   color: "#1a6b3a", desc: "Futebol, corridas, trilhas e o esporte em Foz." },
+  turismo:  { label: "Turismo",   color: "#1a6b5a", desc: "Cataratas, Itaipu, roteiros e o que fazer na região." },
+  paraguai: { label: "Paraguai",  color: "#8e6914", desc: "Compras, câmbio, Ponte Amizade e a fronteira com o Paraguai." },
+  itaipu:   { label: "Itaipu",    color: "#2c3e6b", desc: "A maior hidrelétrica do mundo e seu impacto na região." },
+  seguranca:{ label: "Segurança", color: "#7a1f1f", desc: "Polícia, crime, trânsito e segurança pública em Foz." },
 };
-
-const SUB_CATS: Record<string, string[]> = {
-  cidade:   ["Obras","Transporte","Saúde","Educação","Segurança","Meio Ambiente"],
-  politica: ["Câmara Municipal","Prefeitura","Eleições","Transparência","Orçamento"],
-  economia: ["Comércio","Empregos","Agronegócio","Turismo","Investimentos"],
-  cultura:  ["Música","Teatro","Patrimônio","Gastronomia","Festas"],
-  esporte:  ["Futebol","Corridas","Trilhas","Natação","Outros"],
-  turismo:  ["Cataratas","Itaipu","3 Fronteiras","Roteiros","Hospedagem"],
-  paraguai: ["Compras","Câmbio","Ponte Amizade","CDE","Duty-Free"],
-  itaipu:   ["Energia","Meio Ambiente","Turismo","Obras","Emprego"],
-  seguranca:["Polícia Federal","Polícia Militar","Trânsito","Bombeiros","Outros"],
-};
-
-function timeAgo(date: Date | null) {
-  if (!date) return "";
-  const diff = Date.now() - new Date(date).getTime();
-  const h = Math.floor(diff / 3600000);
-  if (h < 1) return "há menos de 1h";
-  if (h < 24) return `há ${h}h`;
-  return `há ${Math.floor(h / 24)}d`;
-}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
@@ -52,129 +30,139 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return buildMetadata({ title: `${cfg.label} — Foz em Foco`, description: cfg.desc, path: `/categoria/${slug}` });
 }
 
-export default async function CategoriaPage({ params, searchParams }: Props) {
+export default async function CategoriaPage({ params }: Props) {
   const { slug } = await params;
-  const { page: pageParam } = await searchParams;
   const cfg = EDITORIAS[slug];
   if (!cfg) notFound();
 
-  const page = parseInt(pageParam ?? "1", 10);
-  const perPage = 12;
+  type ArticleWithRel = Awaited<ReturnType<typeof prisma.article.findMany>>[number] & {
+    category: { slug: string; name: string; color: string };
+    author: { name: string | null };
+  };
 
-  let articles: Awaited<ReturnType<typeof prisma.article.findMany>> = [];
-  let total = 0;
-  let latest: Awaited<ReturnType<typeof prisma.article.findMany>> = [];
+  let hero: ArticleWithRel | null = null;
+  let grid: ArticleWithRel[] = [];
+  let latest: ArticleWithRel[] = [];
 
   try {
     const category = await prisma.category.findFirst({ where: { slug } });
     if (category) {
-      [articles, total, latest] = await Promise.all([
+      const [artigos, latestAll] = await Promise.all([
         prisma.article.findMany({
           where: { status: "publicado", categoryId: category.id },
           include: { category: true, author: true },
           orderBy: { publishedAt: "desc" },
-          skip: (page - 1) * perPage,
-          take: perPage,
+          take: 7,
         }),
-        prisma.article.count({ where: { status: "publicado", categoryId: category.id } }),
-        prisma.article.findMany({ where: { status: "publicado" }, include: { category: true }, orderBy: { publishedAt: "desc" }, take: 7 }),
+        prisma.article.findMany({
+          where: { status: "publicado" },
+          include: { category: true, author: true },
+          orderBy: { publishedAt: "desc" },
+          take: 7,
+        }),
       ]);
+      hero = (artigos[0] as ArticleWithRel) ?? null;
+      grid = artigos.slice(1, 7) as ArticleWithRel[];
+      latest = latestAll as ArticleWithRel[];
     }
   } catch (e) {
     console.error("CATEGORIA_ERROR", e);
   }
 
-  const subs = SUB_CATS[slug] ?? [];
-  const totalPages = Math.ceil(total / perPage);
-
   return (
     <>
-      {/* Hero */}
-      <div style={{ background: "var(--ink)", padding: "40px 0 0" }}>
-        <div className="container">
-          <div className="row" style={{ gap: 14, marginBottom: 20 }}>
-            <span style={{ fontSize: 40 }}>{cfg.icon}</span>
-            <div>
-              <h1 style={{ fontFamily: "var(--font-serif)", fontSize: "clamp(32px,5vw,52px)", color: "white", lineHeight: 1.05, marginBottom: 6 }}>{cfg.label}</h1>
-              <p className="t-mono" style={{ color: "rgba(255,255,255,.45)", fontSize: 13 }}>{cfg.desc}</p>
-            </div>
-          </div>
-          {/* Sub-cat tabs */}
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            <Link href={`/categoria/${slug}`}>
-              <button className="btn btn-sm" style={{ background: "rgba(255,255,255,.15)", color: "white", border: "none", borderRadius: "var(--r-s) var(--r-s) 0 0" }}>Todos</button>
-            </Link>
-            {subs.map((sub) => (
-              <Link key={sub} href={`/categoria/${slug}?sub=${encodeURIComponent(sub)}`}>
-                <button className="btn btn-sm" style={{ background: "rgba(255,255,255,.07)", color: "rgba(255,255,255,.65)", border: "none", borderRadius: "var(--r-s) var(--r-s) 0 0" }}>{sub}</button>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </div>
+      <CategoryHeader slug={slug} label={cfg.label} desc={cfg.desc} />
 
-      <div className="container" style={{ padding: "32px 20px" }}>
-        <div className="grid-main-side">
+      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '32px 32px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 40, alignItems: 'start' }}>
+
+          {/* Coluna principal */}
           <div>
-            {articles.length === 0 ? (
-              <div style={{ background: "var(--paper-2)", borderRadius: "var(--r-l)", padding: 48, textAlign: "center" }}>
-                <div style={{ fontFamily: "var(--font-serif)", fontSize: 24, marginBottom: 8 }}>Nenhuma notícia ainda</div>
-                <div className="t-small color-muted">Esta editoria ainda não tem conteúdo publicado. Volte em breve.</div>
-              </div>
-            ) : (
-              <>
-                <div className="sec-label bold" style={{ marginBottom: 16 }}>{total} notícia{total !== 1 ? "s" : ""}</div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 20 }}>
-                  {articles.map((a) => {
-                    const cat = (a as typeof a & { category: { slug: string; name: string } }).category;
-                    return (
-                      <Link key={a.id} href={`/${cat.slug}/${a.slug}`}>
-                        <div className="card" style={{ cursor: "pointer" }}>
-                          {a.imageUrl ? (
-                            <div style={{ position: "relative", aspectRatio: "4/3", overflow: "hidden" }}>
-                              <Image src={a.imageUrl} alt={a.title} fill style={{ objectFit: "cover" }} />
-                            </div>
-                          ) : (
-                            <div className="imgph" data-label={cat.slug} style={{ aspectRatio: "4/3" }} />
-                          )}
-                          <div style={{ padding: "14px 16px" }}>
-                            <div className="row" style={{ gap: 6, marginBottom: 8 }}>
-                              <span className={`cat-tag ${cat.slug}`}>{cat.name}</span>
-                              <span className="t-mono color-muted" style={{ marginLeft: "auto", fontSize: 10 }}>{timeAgo(a.publishedAt)}</span>
-                            </div>
-                            <div className="truncate-2" style={{ fontFamily: "var(--font-serif)", fontSize: 15, lineHeight: 1.35 }}>{a.title}</div>
-                          </div>
-                        </div>
-                      </Link>
-                    );
-                  })}
-                </div>
-
-                {totalPages > 1 && (
-                  <div className="row" style={{ gap: 8, marginTop: 32, justifyContent: "center" }}>
-                    {page > 1 && <Link href={`/categoria/${slug}?page=${page - 1}`}><button className="btn btn-outline btn-sm">← Anterior</button></Link>}
-                    <span className="t-mono color-muted" style={{ fontSize: 12, padding: "6px 12px" }}>{page} / {totalPages}</span>
-                    {page < totalPages && <Link href={`/categoria/${slug}?page=${page + 1}`}><button className="btn btn-outline btn-sm">Próxima →</button></Link>}
+            {/* HERO */}
+            {hero ? (
+              <Link href={`/${hero.category.slug}/${hero.slug}`}>
+                <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', marginBottom: 24, cursor: 'pointer' }}>
+                  {hero.imageUrl ? (
+                    <div style={{ position: 'relative', width: '100%', aspectRatio: '2/1', overflow: 'hidden' }}>
+                      <Image src={hero.imageUrl} alt={hero.title} fill style={{ objectFit: 'cover' }} />
+                    </div>
+                  ) : (
+                    <div style={{
+                      width: '100%', aspectRatio: '2/1',
+                      background: '#eef0f4',
+                      backgroundImage: 'linear-gradient(135deg,#eef0f4 25%,#e2e5eb 25%,#e2e5eb 50%,#eef0f4 50%,#eef0f4 75%,#e2e5eb 75%)',
+                      backgroundSize: '20px 20px',
+                    }} />
+                  )}
+                  <div style={{ padding: '24px 28px' }}>
+                    <span style={{ display: 'inline-block', fontFamily: 'monospace', fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '2px 8px', borderRadius: 4, background: '#e6f4f2', color: '#0a7a6b', marginBottom: 10 }}>{hero.category.name}</span>
+                    <h1 style={{ fontFamily: 'DM Serif Display, Georgia, serif', fontSize: 'clamp(24px,3vw,40px)', lineHeight: 1.1, color: '#111', marginBottom: 10 }}>{hero.title}</h1>
+                    {hero.lead && <p style={{ fontSize: 15, color: '#555', lineHeight: 1.5, marginBottom: 10 }}>{hero.lead}</p>}
+                    <div style={{ fontSize: 13, color: '#888' }}>{hero.author.name} · {hero.readTime} min de leitura</div>
                   </div>
-                )}
-              </>
+                </div>
+              </Link>
+            ) : (
+              <div style={{ background: '#f8f9fa', borderRadius: 12, padding: 48, textAlign: 'center', marginBottom: 24 }}>
+                <div style={{ fontFamily: 'DM Serif Display, Georgia, serif', fontSize: 24, marginBottom: 8 }}>Nenhuma notícia ainda</div>
+                <div style={{ fontSize: 14, color: '#888' }}>Esta editoria ainda não tem conteúdo publicado. Volte em breve.</div>
+              </div>
             )}
+
+            {/* GRID 2×3 */}
+            {grid.length > 0 && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 16, marginBottom: 32 }}>
+                {grid.map(a => (
+                  <Link key={a.id} href={`/${a.category.slug}/${a.slug}`}>
+                    <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden', cursor: 'pointer', transition: 'box-shadow 0.2s' }}>
+                      {a.imageUrl ? (
+                        <div style={{ position: 'relative', aspectRatio: '4/3', overflow: 'hidden' }}>
+                          <Image src={a.imageUrl} alt={a.title} fill style={{ objectFit: 'cover' }} />
+                        </div>
+                      ) : (
+                        <div style={{ aspectRatio: '4/3', background: '#eef0f4', backgroundImage: 'linear-gradient(135deg,#eef0f4 25%,#e2e5eb 25%,#e2e5eb 50%,#eef0f4 50%,#eef0f4 75%,#e2e5eb 75%)', backgroundSize: '16px 16px' }} />
+                      )}
+                      <div style={{ padding: '12px 14px' }}>
+                        <div style={{ fontFamily: 'DM Serif Display, Georgia, serif', fontSize: 14, lineHeight: 1.35, color: '#111', marginBottom: 6, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' } as React.CSSProperties}>{a.title}</div>
+                        <div style={{ fontSize: 11, color: '#aaa' }}>{a.readTime} min</div>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+
+            {/* Banner in-feed */}
+            <div style={{ background: '#fef9ec', border: '1px dashed #e8c060', borderRadius: 8, minHeight: 140, marginBottom: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 4, position: 'relative' }}>
+              <div style={{ position: 'absolute', top: -10, left: '50%', transform: 'translateX(-50%)', background: 'white', padding: '1px 10px', fontFamily: 'monospace', fontSize: 9, color: '#c9961a', border: '1px solid #e8c060', borderRadius: 999, whiteSpace: 'nowrap' }}>Publicidade</div>
+              <span style={{ fontSize: 13, color: '#c9961a', fontWeight: 500 }}>Banner in-feed</span>
+              <span style={{ fontSize: 10, color: '#c9961a', opacity: 0.8 }}>970×250</span>
+            </div>
           </div>
 
-          <aside className="sidebar-sticky">
-            <div style={{ background: "var(--ad-bg)", border: "1px dashed var(--ad-border)", borderRadius: "var(--r-m)", height: 250, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <span className="t-mono" style={{ color: "var(--ad)", fontSize: 11 }}>PUBLICIDADE · 300×250</span>
+          {/* SIDEBAR 320px */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24, position: 'sticky', top: 80, alignSelf: 'flex-start' }}>
+            {/* MPU 300×250 */}
+            <div style={{ minHeight: 220, background: '#fef9ec', border: '1px dashed #e8c060', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 4, position: 'relative' }}>
+              <div style={{ position: 'absolute', top: -10, left: '50%', transform: 'translateX(-50%)', background: 'white', padding: '1px 10px', fontFamily: 'monospace', fontSize: 9, color: '#c9961a', border: '1px solid #e8c060', borderRadius: 999, whiteSpace: 'nowrap' }}>Publicidade</div>
+              <span style={{ fontSize: 13, color: '#c9961a', fontWeight: 500 }}>MPU</span>
+              <span style={{ fontSize: 10, color: '#c9961a', opacity: 0.8 }}>300×250</span>
             </div>
-            <NewsletterCTA />
-            <SidebarLatest articles={latest as unknown as Parameters<typeof SidebarLatest>[0]["articles"]} />
-            <div style={{ background: "var(--ink)", color: "white", borderRadius: "var(--r-l)", padding: 16 }}>
-              <div className="t-mono" style={{ opacity: .5, fontSize: 10, marginBottom: 6 }}>PATROCINADOR · {cfg.label.toUpperCase()}</div>
-              <div style={{ fontFamily: "var(--font-serif)", fontSize: 18 }}>Anuncie aqui</div>
-              <Link href="/anuncie">
-                <button className="btn btn-sm" style={{ background: "var(--teal)", color: "white", border: "none", marginTop: 12, width: "100%", justifyContent: "center" }}>Saiba mais →</button>
+
+            {/* Newsletter CTA */}
+            <div style={{ background: '#0a7a6b', borderRadius: 12, padding: 20, color: 'white' }}>
+              <div style={{ fontFamily: 'monospace', fontSize: 10, opacity: 0.8, letterSpacing: '0.1em', marginBottom: 6 }}>☕ NEWSLETTER · TODA MANHÃ 7H</div>
+              <div style={{ fontFamily: 'DM Serif Display, serif', fontSize: 22, marginBottom: 8, lineHeight: 1.2 }}>Foz em 5 minutos no seu e-mail</div>
+              <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 14 }}>14.847 inscritos · 58% de abertura · sem spam</div>
+              <Link href="/newsletter">
+                <button style={{ width: '100%', padding: '11px', background: 'white', color: '#0a7a6b', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>Inscrever grátis →</button>
               </Link>
             </div>
-          </aside>
+
+            {/* Últimas */}
+            <SidebarLatest articles={latest as unknown as Parameters<typeof SidebarLatest>[0]["articles"]} />
+          </div>
+
         </div>
       </div>
     </>
