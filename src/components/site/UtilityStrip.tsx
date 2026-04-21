@@ -14,6 +14,7 @@ const items = [
 export default function UtilityStrip() {
   return (
     <div style={{ background: "#111", color: "rgba(255,255,255,0.75)", height: 32, overflow: "hidden", position: "relative", width: "100%" }}>
+     <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 32px", height: "100%", position: "relative", overflow: "hidden" }}>
       <div style={{
         display: "flex", alignItems: "center", height: "100%",
         animation: "utilityTicker 40s linear infinite",
@@ -40,6 +41,7 @@ export default function UtilityStrip() {
       {/* Fade nas bordas */}
       <div style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: 60, background: "linear-gradient(to right, #111, transparent)", pointerEvents: "none" }} />
       <div style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: 60, background: "linear-gradient(to left, #111, transparent)", pointerEvents: "none" }} />
+     </div>
 
       <style>{`
         @keyframes utilityTicker {
