@@ -1,9 +1,26 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 
 const FILTERS = ["Tudo","Cultura","Gastronomia","Esporte","Negócios","Infantil","Paraguai","Grátis","Pago"];
+const VIEWS = ["Lista","Calendário","Mapa"];
+
+const DESTAQUES = [
+  {
+    d: "24", m: "abr",
+    t: "Show: Os Paralamas do Sucesso",
+    loc: "Centro de Convenções · 21h",
+    desc: "Turnê 2026 passa por Foz com repertório que celebra 40 anos de carreira. Abertura com banda local.",
+    sponsored: true,
+  },
+  {
+    d: "28", m: "abr",
+    t: "Visita Noturna às Cataratas",
+    loc: "Parque Nacional do Iguaçu · 19h30",
+    desc: "Experiência única com iluminação especial das quedas. Inclui transporte interno e taça de espumante.",
+    sponsored: false,
+  },
+];
 
 const EVENTS = [
   { d:"21", m:"abr", dw:"Ter", t:"Feira Gastronômica da Vila A",         cat:"Gastronomia", loc:"Gramadão · 18h–23h",             price:"Grátis",  highlight:false },
@@ -20,6 +37,7 @@ const MONTH_DATES = Array.from({ length: 30 }, (_, i) => i + 1);
 
 export default function AgendaPage() {
   const [activeFilter, setActiveFilter] = useState("Tudo");
+  const [activeView, setActiveView] = useState("Lista");
 
   const filtered = EVENTS.filter(e =>
     activeFilter === "Tudo" ||
@@ -28,31 +46,58 @@ export default function AgendaPage() {
     (activeFilter === "Pago"   && e.price !== "Grátis")
   );
 
+  const tabStyle = (active: boolean) => ({
+    padding: "10px 18px",
+    border: "none",
+    background: active ? "white" : "transparent",
+    color: active ? "#111" : "rgba(255,255,255,0.7)",
+    borderRadius: active ? "8px 8px 0 0" : 0,
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: "pointer",
+    fontFamily: "inherit",
+  });
+
   return (
     <>
       {/* Hero */}
-      <div style={{ background: "var(--ink)", padding: "32px 0 0" }}>
-        <div className="container">
-          <div className="row between" style={{ marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
+      <div style={{ background: "#111", padding: "32px 0 0" }}>
+        <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 32px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
             <div>
-              <h1 style={{ fontFamily: "var(--font-serif)", fontSize: "clamp(28px,4vw,44px)", color: "white" }}>Agenda de Foz</h1>
-              <div className="t-mono" style={{ color: "rgba(255,255,255,.45)", marginTop: 4 }}>347 eventos nos próximos 90 dias · abril–julho 2026</div>
+              <h1 style={{ fontFamily: "DM Serif Display, Georgia, serif", fontSize: "clamp(28px,4vw,44px)", color: "white" }}>Agenda de Foz</h1>
+              <div style={{ fontFamily: "monospace", color: "rgba(255,255,255,.45)", marginTop: 4, fontSize: 12 }}>347 eventos nos próximos 90 dias · abril–julho 2026</div>
             </div>
-            <button className="btn btn-primary">+ Publicar evento · R$ 199</button>
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <div style={{ display: "flex", gap: 4, padding: 4, background: "rgba(255,255,255,0.08)", borderRadius: 8 }}>
+                {VIEWS.map(v => (
+                  <button
+                    key={v}
+                    onClick={() => setActiveView(v)}
+                    style={{
+                      padding: "6px 14px",
+                      border: "none",
+                      background: activeView === v ? "white" : "transparent",
+                      color: activeView === v ? "#111" : "rgba(255,255,255,0.7)",
+                      borderRadius: 6,
+                      fontSize: 12,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                    }}
+                  >{v}</button>
+                ))}
+              </div>
+              <button style={{ padding: "10px 16px", background: "#0a7a6b", color: "white", border: "none", borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>+ Publicar evento · R$ 199</button>
+            </div>
           </div>
 
-          {/* Filters */}
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", paddingBottom: 16 }}>
+          {/* Filter tabs — white active tab glued to header bottom */}
+          <div style={{ display: "flex", gap: 2, flexWrap: "wrap", marginTop: 20 }}>
             {FILTERS.map(f => (
               <button
                 key={f}
                 onClick={() => setActiveFilter(f)}
-                className="btn btn-sm"
-                style={{
-                  background: activeFilter === f ? "var(--teal)" : "rgba(255,255,255,.1)",
-                  color: activeFilter === f ? "white" : "rgba(255,255,255,.7)",
-                  border: "none",
-                }}
+                style={tabStyle(activeFilter === f)}
               >
                 {f}
               </button>
@@ -61,74 +106,114 @@ export default function AgendaPage() {
         </div>
       </div>
 
-      <div className="container" style={{ padding: "32px 20px" }}>
-        <div className="grid-main-side">
+      <div style={{ maxWidth: 1280, margin: "0 auto", padding: "32px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 40, alignItems: "start" }}>
           <div>
-            <div className="sec-label bold" style={{ marginBottom: 12 }}>Esta semana</div>
+            {/* Destaques */}
+            <div style={{ fontFamily: "monospace", fontSize: 11, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", color: "#0a7a6b", marginBottom: 12 }}>Destaques</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 32 }}>
+              {DESTAQUES.map(ev => (
+                <div key={ev.t} style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 12, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+                  {/* Image 16/7 */}
+                  <div style={{
+                    position: "relative",
+                    aspectRatio: "16 / 7",
+                    background: "#dde2e8",
+                    backgroundImage: "linear-gradient(135deg,#dde2e8 25%,#cdd2d8 25%,#cdd2d8 50%,#dde2e8 50%,#dde2e8 75%,#cdd2d8 75%)",
+                    backgroundSize: "20px 20px",
+                  }}>
+                    {/* Date badge */}
+                    <div style={{
+                      position: "absolute", top: 12, left: 12,
+                      background: "white", borderRadius: 8, padding: "6px 12px", textAlign: "center",
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.15)", minWidth: 52,
+                    }}>
+                      <div style={{ fontFamily: "DM Serif Display, serif", fontSize: 22, lineHeight: 1, color: "#0a7a6b" }}>{ev.d}</div>
+                      <div style={{ fontFamily: "monospace", fontSize: 10, color: "#888", textTransform: "uppercase", marginTop: 2 }}>{ev.m}</div>
+                    </div>
+                    {ev.sponsored && (
+                      <div style={{
+                        position: "absolute", top: 12, right: 12,
+                        background: "#d4a017", color: "white", padding: "3px 10px", borderRadius: 4,
+                        fontFamily: "monospace", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
+                      }}>PATROCINADO</div>
+                    )}
+                  </div>
+                  <div style={{ padding: "16px 20px", flex: 1, display: "flex", flexDirection: "column" }}>
+                    <div style={{ fontFamily: "DM Serif Display, Georgia, serif", fontSize: 18, lineHeight: 1.25, marginBottom: 6, color: "#111" }}>{ev.t}</div>
+                    <div style={{ fontFamily: "monospace", fontSize: 11, color: "#888", marginBottom: 10 }}>{ev.loc}</div>
+                    <div style={{ fontSize: 13, color: "#444", lineHeight: 1.5, marginBottom: 16, flex: 1 }}>{ev.desc}</div>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button style={{ flex: 1, padding: "8px 14px", background: "#0a7a6b", color: "white", border: "none", borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>Ingressos</button>
+                      <button style={{ padding: "8px 14px", background: "white", color: "#111", border: "1.5px solid #e2e8f0", borderRadius: 8, fontWeight: 500, fontSize: 13, cursor: "pointer" }}>Adicionar</button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ fontFamily: "monospace", fontSize: 11, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase", color: "#0a7a6b", marginBottom: 12 }}>Esta semana</div>
             {filtered.map(({ d, m, dw, t, cat, loc, price, highlight }) => (
               <div
                 key={t}
                 style={{
                   background: "white", border: "1.5px solid",
-                  borderColor: highlight ? "var(--teal)" : "var(--border)",
-                  borderRadius: "var(--r-l)", padding: "14px 18px", marginBottom: 10,
+                  borderColor: highlight ? "#0a7a6b" : "#e2e8f0",
+                  borderRadius: 12, padding: "14px 18px", marginBottom: 10,
                   display: "flex", gap: 16, alignItems: "center",
-                  boxShadow: highlight ? "var(--shadow-m)" : "var(--shadow-s)",
+                  boxShadow: highlight ? "0 4px 12px rgba(0,0,0,0.06)" : "0 1px 3px rgba(0,0,0,0.04)",
                 }}
               >
-                {/* Date badge */}
                 <div style={{ flexShrink: 0, textAlign: "center", width: 52 }}>
-                  <div className="t-mono" style={{ fontSize: 10, color: highlight ? "var(--teal)" : "var(--muted)", marginBottom: 2 }}>{dw}</div>
-                  <div style={{ fontFamily: "var(--font-serif)", fontSize: 32, lineHeight: 1, color: highlight ? "var(--teal)" : "var(--ink)" }}>{d}</div>
-                  <div className="t-mono" style={{ fontSize: 10, color: "var(--muted)" }}>{m}</div>
+                  <div style={{ fontFamily: "monospace", fontSize: 10, color: highlight ? "#0a7a6b" : "#888", marginBottom: 2 }}>{dw}</div>
+                  <div style={{ fontFamily: "DM Serif Display, serif", fontSize: 32, lineHeight: 1, color: highlight ? "#0a7a6b" : "#111" }}>{d}</div>
+                  <div style={{ fontFamily: "monospace", fontSize: 10, color: "#888" }}>{m}</div>
                 </div>
 
                 <div style={{ flex: 1 }}>
-                  <div className="row" style={{ gap: 8, marginBottom: 4 }}>
-                    <span className={`cat-tag ${cat.toLowerCase()}`}>{cat}</span>
-                    {highlight && <span className="cat-tag" style={{ background: "var(--teal-light)", color: "var(--teal)" }}>Destaque</span>}
+                  <div style={{ display: "flex", gap: 8, marginBottom: 4 }}>
+                    <span style={{ fontFamily: "monospace", fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 4, background: "#e6f4f2", color: "#0a7a6b", textTransform: "uppercase" }}>{cat}</span>
+                    {highlight && <span style={{ fontFamily: "monospace", fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 4, background: "#fff4d6", color: "#8a6b00", textTransform: "uppercase" }}>Destaque</span>}
                   </div>
-                  <div style={{ fontFamily: "var(--font-serif)", fontSize: 16, fontWeight: 600, marginBottom: 2, lineHeight: 1.2 }}>{t}</div>
-                  <div className="t-mono color-muted" style={{ fontSize: 11 }}>{loc}</div>
+                  <div style={{ fontFamily: "DM Serif Display, serif", fontSize: 16, fontWeight: 600, marginBottom: 2, lineHeight: 1.2 }}>{t}</div>
+                  <div style={{ fontFamily: "monospace", fontSize: 11, color: "#888" }}>{loc}</div>
                 </div>
 
                 <div style={{ textAlign: "right", flexShrink: 0 }}>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 15, fontWeight: 700, color: price === "Grátis" ? "var(--success)" : "var(--ink)", marginBottom: 4 }}>
+                  <div style={{ fontFamily: "monospace", fontSize: 15, fontWeight: 700, color: price === "Grátis" ? "#27ae60" : "#111", marginBottom: 4 }}>
                     {price}
                   </div>
-                  <div className="t-mono color-muted" style={{ fontSize: 10 }}>entrada</div>
+                  <div style={{ fontFamily: "monospace", fontSize: 10, color: "#888" }}>entrada</div>
                 </div>
-                <button className="btn btn-outline btn-sm">ver →</button>
+                <button style={{ padding: "6px 12px", background: "white", border: "1.5px solid #e2e8f0", borderRadius: 8, fontSize: 12, cursor: "pointer" }}>ver →</button>
               </div>
             ))}
 
             {filtered.length === 0 && (
-              <div style={{ background: "var(--paper-2)", borderRadius: "var(--r-l)", padding: 32, textAlign: "center" }}>
-                <div className="t-mono color-muted" style={{ fontSize: 13 }}>Nenhum evento encontrado para este filtro</div>
+              <div style={{ background: "#f5f7fa", borderRadius: 12, padding: 32, textAlign: "center" }}>
+                <div style={{ fontFamily: "monospace", color: "#888", fontSize: 13 }}>Nenhum evento encontrado para este filtro</div>
               </div>
             )}
 
-            <div style={{ background: "var(--ad-bg)", border: "1px dashed var(--ad-border)", borderRadius: "var(--r-m)", height: 200, display: "flex", alignItems: "center", justifyContent: "center", marginTop: 16 }}>
-              <span className="t-mono" style={{ color: "var(--ad)", fontSize: 11 }}>PUBLICIDADE · 970×250</span>
+            <div style={{ background: "#f5f7fa", border: "1px dashed #cbd5e0", borderRadius: 10, height: 200, display: "flex", alignItems: "center", justifyContent: "center", marginTop: 16 }}>
+              <span style={{ fontFamily: "monospace", color: "#888", fontSize: 11 }}>PUBLICIDADE · 970×250</span>
             </div>
           </div>
 
           {/* Sidebar */}
-          <aside className="sidebar-sticky">
-            {/* Mini calendar */}
-            <div style={{ background: "white", border: "1px solid var(--border)", borderRadius: "var(--r-l)", padding: "16px 20px" }}>
-              <div className="row between" style={{ marginBottom: 12 }}>
-                <span className="t-h4">Abril 2026</span>
-                <div className="row" style={{ gap: 6 }}>
-                  <button className="btn btn-ghost btn-sm" style={{ padding: "4px 8px" }}>‹</button>
-                  <button className="btn btn-ghost btn-sm" style={{ padding: "4px 8px" }}>›</button>
+          <aside style={{ display: "flex", flexDirection: "column", gap: 16, position: "sticky", top: 80 }}>
+            <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 12, padding: "16px 20px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                <span style={{ fontFamily: "DM Serif Display, serif", fontSize: 18 }}>Abril 2026</span>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button style={{ padding: "4px 8px", border: "none", background: "transparent", cursor: "pointer" }}>‹</button>
+                  <button style={{ padding: "4px 8px", border: "none", background: "transparent", cursor: "pointer" }}>›</button>
                 </div>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 2, textAlign: "center" }}>
                 {DAYS.map(d => (
-                  <div key={d} className="t-mono" style={{ fontSize: 9, color: "var(--muted)", padding: "4px 0" }}>{d}</div>
+                  <div key={d} style={{ fontFamily: "monospace", fontSize: 9, color: "#888", padding: "4px 0" }}>{d}</div>
                 ))}
-                {/* offset for April starting on Wednesday */}
                 {[0,1,2].map(i => <div key={`e${i}`} />)}
                 {MONTH_DATES.map(n => (
                   <div
@@ -136,8 +221,8 @@ export default function AgendaPage() {
                     style={{
                       padding: "4px", fontSize: 13,
                       borderRadius: "50%",
-                      background: [21,24,28].includes(n) ? "var(--teal)" : "transparent",
-                      color: [21,24,28].includes(n) ? "white" : n === 23 ? "var(--teal)" : "var(--ink)",
+                      background: [21,24,28].includes(n) ? "#0a7a6b" : "transparent",
+                      color: [21,24,28].includes(n) ? "white" : n === 23 ? "#0a7a6b" : "#111",
                       fontWeight: [21,24,28].includes(n) ? 700 : 400,
                       cursor: "pointer",
                     }}
@@ -146,16 +231,15 @@ export default function AgendaPage() {
               </div>
             </div>
 
-            {/* Publish CTA */}
-            <div style={{ background: "var(--teal-pale)", border: "1px solid var(--teal-light)", borderRadius: "var(--r-l)", padding: "16px 20px" }}>
-              <div className="t-mono" style={{ color: "var(--teal)", fontSize: 11, marginBottom: 6 }}>ANUNCIE SEU EVENTO</div>
-              <div style={{ fontFamily: "var(--font-serif)", fontSize: 20, marginBottom: 6 }}>Destaque na Agenda</div>
-              <div className="t-small color-muted" style={{ marginBottom: 12 }}>a partir de R$ 199 · 7 dias em destaque + topo da lista · média de 800 visualizações</div>
-              <button className="btn btn-primary" style={{ width: "100%", justifyContent: "center" }}>Publicar evento →</button>
+            <div style={{ background: "#e6f4f2", border: "1px solid #c5e8e2", borderRadius: 12, padding: "16px 20px" }}>
+              <div style={{ fontFamily: "monospace", color: "#0a7a6b", fontSize: 11, marginBottom: 6, letterSpacing: "0.08em" }}>ANUNCIE SEU EVENTO</div>
+              <div style={{ fontFamily: "DM Serif Display, serif", fontSize: 20, marginBottom: 6 }}>Destaque na Agenda</div>
+              <div style={{ fontSize: 13, color: "#555", marginBottom: 12 }}>a partir de R$ 199 · 7 dias em destaque + topo da lista · média de 800 visualizações</div>
+              <button style={{ width: "100%", padding: "10px", background: "#0a7a6b", color: "white", border: "none", borderRadius: 8, fontWeight: 600, fontSize: 14, cursor: "pointer" }}>Publicar evento →</button>
             </div>
 
-            <div style={{ background: "var(--ad-bg)", border: "1px dashed var(--ad-border)", borderRadius: "var(--r-m)", height: 250, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <span className="t-mono" style={{ color: "var(--ad)", fontSize: 11 }}>PUBLICIDADE · 300×250</span>
+            <div style={{ background: "#f5f7fa", border: "1px dashed #cbd5e0", borderRadius: 10, height: 250, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <span style={{ fontFamily: "monospace", color: "#888", fontSize: 11 }}>PUBLICIDADE · 300×250</span>
             </div>
           </aside>
         </div>
