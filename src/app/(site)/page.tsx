@@ -60,7 +60,18 @@ function formatDate(date: Date | null) {
 }
 
 export default async function HomePage() {
-  const { hero, feed, mostRead } = await getHomeData();
+  let data: Awaited<ReturnType<typeof getHomeData>> | null = null;
+  let errorMsg: string | null = null;
+  try {
+    data = await getHomeData();
+  } catch (e: any) {
+    errorMsg = String(e?.message ?? e);
+    console.error("HOME_ERROR", e);
+  }
+  if (errorMsg || !data) {
+    return <pre style={{ color: "red", padding: 32, whiteSpace: "pre-wrap" }}>{errorMsg ?? "unknown error"}</pre>;
+  }
+  const { hero, feed, mostRead } = data;
 
   return (
     <div className="bg-paper">
