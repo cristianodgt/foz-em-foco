@@ -1,0 +1,431 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  super_admin
+  editor
+  reporter
+  estagiario
+}
+
+enum ArticleStatus {
+  rascunho
+  revisao
+  agendado
+  publicado
+}
+
+enum BusinessPlan {
+  basico
+  prata
+  ouro
+}
+
+enum AdSlotType {
+  leaderboard
+  mpu
+  sticky
+  halfpage
+  infeed
+  newsletter
+  section
+  video
+}
+
+enum BridgeStatus {
+  livre
+  moderado
+  lento
+  fechado
+}
+
+enum CommentStatus {
+  pendente
+  aprovado
+  rejeitado
+  spam
+}
+
+// ─── Auth / Users ─────────────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  role          UserRole  @default(reporter)
+  bio           String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts Account[]
+  sessions Session[]
+  articles Article[]
+
+  @@index([email])
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+// ─── Categories ───────────────────────────────────────────────────────────────
+
+model Category {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  slug        String    @unique
+  description String?
+  color       String    @default("#0a7a6b")
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now())
+
+  articles Article[]
+
+  @@index([slug])
+  @@map("categories")
+}
+
+// ─── Articles ─────────────────────────────────────────────────────────────────
+
+model Article {
+  id          String        @id @default(cuid())
+  title       String
+  slug        String        @unique
+  lead        String?
+  body        String
+  imageUrl    String?
+  imageCaption String?
+  status      ArticleStatus @default(rascunho)
+  featured    Boolean       @default(false)
+  views       Int           @default(0)
+  readTime    Int           @default(3)
+  publishedAt DateTime?
+  scheduledAt DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  // SEO
+  metaTitle       String?
+  metaDescription String?
+  ogImage         String?
+
+  // Relations
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
+  authorId   String
+  author     User     @relation(fields: [authorId], references: [id])
+  tags       Tag[]
+  comments   Comment[]
+
+  @@index([slug])
+  @@index([categoryId])
+  @@index([authorId])
+  @@index([status, publishedAt])
+  @@index([featured])
+  @@map("articles")
+}
+
+model Tag {
+  id       String    @id @default(cuid())
+  name     String    @unique
+  slug     String    @unique
+  articles Article[]
+
+  @@map("tags")
+}
+
+// ─── Comments ─────────────────────────────────────────────────────────────────
+
+model Comment {
+  id        String        @id @default(cuid())
+  name      String
+  email     String
+  body      String
+  status    CommentStatus @default(pendente)
+  createdAt DateTime      @default(now())
+
+  articleId String
+  article   Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@index([articleId])
+  @@index([status])
+  @@map("comments")
+}
+
+// ─── Guia Comercial ───────────────────────────────────────────────────────────
+
+model BusinessCategory {
+  id          String     @id @default(cuid())
+  name        String     @unique
+  slug        String     @unique
+  icon        String?
+  businesses  Business[]
+
+  @@map("business_categories")
+}
+
+model Business {
+  id          String       @id @default(cuid())
+  name        String
+  slug        String       @unique
+  description String?
+  plan        BusinessPlan @default(basico)
+  active      Boolean      @default(true)
+
+  // Contact
+  phone     String?
+  whatsapp  String?
+  email     String?
+  website   String?
+
+  // Address
+  address   String?
+  bairro    String?
+  city      String   @default("Foz do Iguaçu")
+  lat       Float?
+  lng       Float?
+
+  // Features
+  delivery    Boolean @default(false)
+  reserva     Boolean @default(false)
+  aceitaPix   Boolean @default(false)
+  petFriendly Boolean @default(false)
+
+  // Hours (JSON: {"seg":{"open":"08:00","close":"18:00"}, ...})
+  hours     Json?
+
+  // SEO
+  metaTitle       String?
+  metaDescription String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  categoryId String
+  category   BusinessCategory @relation(fields: [categoryId], references: [id])
+  photos     BusinessPhoto[]
+  reviews    BusinessReview[]
+
+  @@index([slug])
+  @@index([categoryId])
+  @@index([plan])
+  @@index([active])
+  @@map("businesses")
+}
+
+model BusinessPhoto {
+  id         String   @id @default(cuid())
+  url        String
+  caption    String?
+  order      Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@map("business_photos")
+}
+
+model BusinessReview {
+  id        String   @id @default(cuid())
+  name      String
+  rating    Int
+  body      String?
+  approved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@map("business_reviews")
+}
+
+// ─── Agenda de Eventos ────────────────────────────────────────────────────────
+
+model Event {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  description String?
+  imageUrl    String?
+  local       String?
+  address     String?
+  price       String?
+  free        Boolean  @default(false)
+  category    String?
+  startDate   DateTime
+  endDate     DateTime?
+  active      Boolean  @default(true)
+  approved    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([startDate])
+  @@index([approved, active])
+  @@map("events")
+}
+
+// ─── Vagas de Emprego ─────────────────────────────────────────────────────────
+
+model Job {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  company     String
+  description String
+  area        String?
+  regime      String?
+  salary      String?
+  benefits    String?
+  local       String?
+  remote      Boolean  @default(false)
+  active      Boolean  @default(true)
+  approved    Boolean  @default(false)
+  expiresAt   DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([approved, active])
+  @@map("jobs")
+}
+
+// ─── Publicidade ──────────────────────────────────────────────────────────────
+
+model Advertiser {
+  id        String   @id @default(cuid())
+  name      String
+  segment   String?
+  contact   String?
+  email     String?
+  phone     String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  campaigns AdCampaign[]
+
+  @@map("advertisers")
+}
+
+model AdCampaign {
+  id          String     @id @default(cuid())
+  name        String
+  startDate   DateTime
+  endDate     DateTime
+  active      Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+
+  advertiserId String
+  advertiser   Advertiser  @relation(fields: [advertiserId], references: [id], onDelete: Cascade)
+  creatives    AdCreative[]
+
+  @@index([advertiserId])
+  @@index([active, startDate, endDate])
+  @@map("ad_campaigns")
+}
+
+model AdCreative {
+  id         String     @id @default(cuid())
+  slot       AdSlotType
+  imageUrl   String
+  linkUrl    String
+  altText    String?
+  active     Boolean    @default(true)
+  clicks     Int        @default(0)
+  impressions Int       @default(0)
+  createdAt  DateTime   @default(now())
+
+  campaignId String
+  campaign   AdCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([slot, active])
+  @@map("ad_creatives")
+}
+
+// ─── Newsletter ───────────────────────────────────────────────────────────────
+
+model NewsletterSubscriber {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  name        String?
+  active      Boolean  @default(true)
+  brevoId     String?
+  confirmedAt DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([email])
+  @@map("newsletter_subscribers")
+}
+
+model NewsletterEdition {
+  id        String   @id @default(cuid())
+  subject   String
+  body      String
+  sentAt    DateTime?
+  sentCount Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@map("newsletter_editions")
+}
+
+// ─── Site Config ──────────────────────────────────────────────────────────────
+
+model SiteConfig {
+  id                  String       @id @default(cuid())
+  siteName            String       @default("Foz em Foco")
+  siteDescription     String?
+  logoUrl             String?
+  faviconUrl          String?
+  // Bridge status (updated manually by admin)
+  bridgeTancredo      BridgeStatus @default(livre)
+  bridgeAmizade       BridgeStatus @default(livre)
+  // Cataratas
+  cataratosVazao      String?
+  cataratosUpdatedAt  DateTime?
+  // Dashboard sponsor
+  dashboardSponsor    String?
+  dashboardSponsorUrl String?
+  // Newsletter settings
+  newsletterBrevoList String?
+  updatedAt           DateTime     @updatedAt
+
+  @@map("site_config")
+}
