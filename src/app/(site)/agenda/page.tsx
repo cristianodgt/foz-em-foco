@@ -3,7 +3,6 @@
 import { useState } from "react";
 
 const FILTERS = ["Tudo","Cultura","Gastronomia","Esporte","Negócios","Infantil","Paraguai","Grátis","Pago"];
-const VIEWS = ["Lista","Calendário","Mapa"];
 
 const DESTAQUES = [
   {
@@ -37,7 +36,6 @@ const MONTH_DATES = Array.from({ length: 30 }, (_, i) => i + 1);
 
 export default function AgendaPage() {
   const [activeFilter, setActiveFilter] = useState("Tudo");
-  const [activeView, setActiveView] = useState("Lista");
 
   const filtered = EVENTS.filter(e =>
     activeFilter === "Tudo" ||
@@ -68,27 +66,7 @@ export default function AgendaPage() {
               <h1 style={{ fontFamily: "DM Serif Display, Georgia, serif", fontSize: "clamp(28px,4vw,44px)", color: "white" }}>Agenda de Foz</h1>
               <div style={{ fontFamily: "monospace", color: "rgba(255,255,255,.45)", marginTop: 4, fontSize: 12 }}>347 eventos nos próximos 90 dias · abril–julho 2026</div>
             </div>
-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <div style={{ display: "flex", gap: 4, padding: 4, background: "rgba(255,255,255,0.08)", borderRadius: 8 }}>
-                {VIEWS.map(v => (
-                  <button
-                    key={v}
-                    onClick={() => setActiveView(v)}
-                    style={{
-                      padding: "6px 14px",
-                      border: "none",
-                      background: activeView === v ? "white" : "transparent",
-                      color: activeView === v ? "#111" : "rgba(255,255,255,0.7)",
-                      borderRadius: 6,
-                      fontSize: 12,
-                      fontWeight: 600,
-                      cursor: "pointer",
-                    }}
-                  >{v}</button>
-                ))}
-              </div>
-              <button style={{ padding: "10px 16px", background: "#0a7a6b", color: "white", border: "none", borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>+ Publicar evento · R$ 199</button>
-            </div>
+            <button style={{ padding: "10px 16px", background: "#0a7a6b", color: "white", border: "none", borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>+ Publicar evento</button>
           </div>
 
           {/* Filter tabs — white active tab glued to header bottom */}
