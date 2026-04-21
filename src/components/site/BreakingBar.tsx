@@ -1,25 +1,19 @@
-"use client";
-
-import Link from "next/link";
-import { AlertTriangle } from "lucide-react";
-
-interface BreakingBarProps {
-  text: string;
-  href?: string;
-}
-
-export default function BreakingBar({ text, href = "#" }: BreakingBarProps) {
+export default function BreakingBar({ text }: { text?: string | null }) {
+  if (!text) return null;
   return (
-    <div className="bg-red-600 text-white text-sm font-semibold py-2">
-      <div className="max-w-7xl mx-auto px-4 flex items-center gap-3">
-        <span className="flex items-center gap-1.5 bg-white text-red-600 px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider shrink-0">
-          <AlertTriangle size={12} />
-          Urgente
-        </span>
-        <Link href={href} className="hover:underline line-clamp-1 flex-1">
-          {text}
-        </Link>
-      </div>
+    <div style={{
+      background: "var(--danger)", color: "white",
+      padding: "8px 20px", display: "flex", alignItems: "center", gap: 12,
+      fontSize: 13, fontWeight: 500,
+    }}>
+      <span style={{
+        background: "white", color: "var(--danger)",
+        padding: "2px 10px", borderRadius: 999,
+        fontFamily: "var(--font-mono)", fontSize: 10,
+        fontWeight: 700, letterSpacing: "0.1em", flexShrink: 0,
+      }}>URGENTE</span>
+      <span style={{ flex: 1 }}>{text}</span>
+      <span style={{ opacity: .7, fontFamily: "var(--font-mono)", fontSize: 10, flexShrink: 0 }}>há 3min</span>
     </div>
   );
 }

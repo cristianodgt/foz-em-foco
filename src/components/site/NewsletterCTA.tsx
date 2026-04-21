@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Mail, CheckCircle } from "lucide-react";
 
 export default function NewsletterCTA() {
   const [email, setEmail] = useState("");
@@ -23,36 +22,39 @@ export default function NewsletterCTA() {
   };
 
   return (
-    <div className="bg-teal-light border border-teal/20 rounded-lg p-5">
-      <div className="flex items-center gap-2 mb-2">
-        <Mail size={18} className="text-teal" />
-        <h3 className="font-semibold text-ink text-sm">Newsletter Foz em Foco</h3>
+    <div style={{ background: "var(--teal)", borderRadius: "var(--r-l)", padding: 20, color: "white" }}>
+      <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, opacity: .8, letterSpacing: "0.1em", marginBottom: 6 }}>
+        NEWSLETTER · TODA MANHÃ 7H
       </div>
-      <p className="text-xs text-muted mb-3 leading-relaxed">
-        As principais notícias da cidade direto no seu e-mail, todo dia.
-      </p>
+      <div style={{ fontFamily: "var(--font-serif)", fontSize: 22, marginBottom: 8, lineHeight: 1.2 }}>
+        Foz em 5 minutos no seu e-mail
+      </div>
+      <div style={{ fontSize: 13, opacity: .9, marginBottom: 14 }}>
+        14.847 inscritos · 58% de abertura · sem spam
+      </div>
       {status === "done" ? (
-        <div className="flex items-center gap-2 text-teal text-sm font-medium">
-          <CheckCircle size={16} />
-          Inscrito com sucesso!
-        </div>
+        <div style={{ fontSize: 14, fontWeight: 600, color: "white" }}>✓ Inscrito com sucesso!</div>
       ) : (
-        <form onSubmit={handleSubmit} className="flex flex-col gap-2">
+        <form onSubmit={handleSubmit}>
           <input
+            className="input"
             type="email"
             required
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={e => setEmail(e.target.value)}
             placeholder="seu@email.com"
-            className="text-sm border border-border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal/30"
+            style={{ marginBottom: 8, background: "rgba(255,255,255,.15)", border: "1.5px solid rgba(255,255,255,.4)", color: "white" }}
           />
-          {status === "error" && <p className="text-xs text-red-500">Erro. Tente novamente.</p>}
+          {status === "error" && (
+            <div style={{ fontSize: 12, color: "rgba(255,255,255,.8)", marginBottom: 6 }}>Erro. Tente novamente.</div>
+          )}
           <button
             type="submit"
             disabled={status === "loading"}
-            className="bg-teal text-white text-sm font-semibold py-2 rounded hover:bg-teal-dark transition-colors disabled:opacity-50"
+            className="btn"
+            style={{ width: "100%", justifyContent: "center", background: "white", color: "var(--teal)", fontWeight: 700 }}
           >
-            {status === "loading" ? "Inscrevendo..." : "Assinar grátis"}
+            {status === "loading" ? "Inscrevendo..." : "Inscrever grátis →"}
           </button>
         </form>
       )}

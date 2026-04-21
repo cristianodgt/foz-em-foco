@@ -1,173 +1,87 @@
 "use client";
-
 import Link from "next/link";
-import { useState } from "react";
-import { Search, Menu, X, Megaphone } from "lucide-react";
 
-const EDITORIAS_NAV = [
-  { label: "Cidade", slug: "cidade" },
-  { label: "Política", slug: "politica" },
-  { label: "Economia", slug: "economia" },
-  { label: "Turismo", slug: "turismo" },
-  { label: "Paraguai", slug: "paraguai" },
-  { label: "Cultura", slug: "cultura" },
-  { label: "Esporte", slug: "esporte" },
-  { label: "Itaipu", slug: "itaipu" },
+const navItems = [
+  { href: "/categoria/cidade",   label: "Cidade" },
+  { href: "/categoria/politica", label: "Política" },
+  { href: "/categoria/economia", label: "Economia" },
+  { href: "/categoria/turismo",  label: "Turismo" },
+  { href: "/categoria/paraguai", label: "Paraguai" },
+  { href: "/categoria/cultura",  label: "Cultura" },
+  { href: "/guia",               label: "Guia" },
+  { href: "/agenda",             label: "Agenda" },
+  { href: "/empregos",           label: "Empregos" },
 ];
 
-interface UtilityData {
-  temp?: string;
-  weather?: string;
-  usd?: string;
-  guarani?: string;
-  bridge?: string;
-}
-
-interface HeaderProps {
-  utility?: UtilityData;
-}
-
-export default function Header({ utility }: HeaderProps) {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-
+export default function Header() {
   return (
-    <header className="sticky top-0 z-40 bg-white border-b border-border shadow-sm">
-      {/* Utility strip */}
-      <div className="bg-ink text-white text-xs font-mono py-1.5">
-        <div className="max-w-7xl mx-auto px-4 flex items-center gap-4 overflow-x-auto scrollbar-none">
-          {utility?.temp && (
-            <span className="shrink-0">☀️ {utility.temp}°C {utility.weather}</span>
-          )}
-          {utility?.usd && (
-            <span className="shrink-0">💵 USD {utility.usd}</span>
-          )}
-          {utility?.guarani && (
-            <span className="shrink-0">🇵🇾 R$ 1 = ₲{utility.guarani}</span>
-          )}
-          {utility?.bridge && (
-            <span className="shrink-0">🌉 Ponte {utility.bridge}</span>
-          )}
-          {!utility?.temp && (
-            <>
-              <span className="shrink-0 text-white/50">Carregando dados da cidade...</span>
-            </>
-          )}
-          <span className="ml-auto shrink-0 text-white/40">
-            {new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}
-          </span>
-        </div>
-      </div>
+    <header style={{
+      background: "white",
+      borderBottom: "1px solid var(--border)",
+      position: "sticky", top: 0, zIndex: 80,
+      boxShadow: "var(--shadow-s)",
+    }}>
+      <div className="container" style={{ display: "flex", alignItems: "center", padding: "12px 20px", gap: 16 }}>
 
-      {/* Logo + actions */}
-      <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-4">
-        <Link href="/" className="flex items-center gap-2 shrink-0">
-          <div className="w-9 h-9 rounded-full bg-teal flex items-center justify-center text-white font-bold text-sm">
-            FF
-          </div>
-          <span className="font-serif text-xl font-bold text-ink leading-none hidden sm:block">
-            Foz em Foco
+        {/* Logo */}
+        <Link href="/" style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+          <svg width="32" height="32" viewBox="0 0 32 32">
+            <circle cx="16" cy="16" r="14" fill="none" stroke="#0a7a6b" strokeWidth="2"/>
+            <circle cx="16" cy="16" r="9"  fill="none" stroke="#0a7a6b" strokeWidth="2"/>
+            <circle cx="16" cy="16" r="4"  fill="#0a7a6b"/>
+          </svg>
+          <span style={{ fontFamily: "var(--font-serif)", fontSize: 22, fontWeight: 400, color: "var(--ink)", letterSpacing: "-0.01em" }}>
+            Foz <span style={{ color: "var(--teal)" }}>em</span> Foco
           </span>
         </Link>
 
-        <div className="flex-1" />
+        <div style={{ width: 1, height: 28, background: "var(--border)", flexShrink: 0 }} />
 
-        {/* Search */}
-        {searchOpen ? (
-          <form
-            className="flex items-center gap-2 flex-1 max-w-sm"
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (searchQuery.trim()) {
-                window.location.href = `/busca?q=${encodeURIComponent(searchQuery)}`;
-              }
-            }}
-          >
-            <input
-              autoFocus
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar notícias..."
-              className="flex-1 text-sm border border-border rounded px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-teal/30"
-            />
-            <button type="button" onClick={() => setSearchOpen(false)} className="text-muted hover:text-ink">
-              <X size={18} />
-            </button>
-          </form>
-        ) : (
-          <button
-            onClick={() => setSearchOpen(true)}
-            className="text-muted hover:text-teal transition-colors"
-            aria-label="Buscar"
-          >
-            <Search size={20} />
-          </button>
-        )}
+        {/* Nav desktop */}
+        <nav style={{ display: "flex", gap: 2, flex: 1, flexWrap: "wrap", overflow: "hidden", maxHeight: 36 }}>
+          {navItems.map(({ href, label }) => (
+            <Link key={href} href={href} style={{
+              padding: "6px 10px", borderRadius: "var(--r-s)", fontSize: 14,
+              color: "var(--ink-3)", borderBottom: "2px solid transparent",
+              whiteSpace: "nowrap",
+            }}>{label}</Link>
+          ))}
+        </nav>
 
-        <Link
-          href="/anuncie"
-          className="hidden sm:flex items-center gap-1.5 bg-teal text-white text-sm font-semibold px-3 py-1.5 rounded hover:bg-teal-dark transition-colors"
-        >
-          <Megaphone size={14} />
-          Anuncie
-        </Link>
-
-        <button
-          className="sm:hidden text-ink"
-          onClick={() => setMenuOpen(!menuOpen)}
-          aria-label="Menu"
-        >
-          {menuOpen ? <X size={22} /> : <Menu size={22} />}
-        </button>
+        {/* Actions */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+          <Link href="/busca" style={{
+            background: "var(--paper-2)", padding: "7px 14px", borderRadius: 999,
+            display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--ink-3)",
+          }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+            </svg>
+            Buscar
+          </Link>
+          <Link href="/anuncie" className="btn btn-primary btn-sm">Anuncie</Link>
+          <button className="btn btn-outline btn-sm">Entrar</button>
+        </div>
       </div>
 
-      {/* Nav */}
-      <nav className="border-t border-border">
-        <div className="max-w-7xl mx-auto px-4">
-          {/* Desktop: horizontal scroll */}
-          <div className="hidden sm:flex overflow-x-auto scrollbar-none gap-0">
-            {EDITORIAS_NAV.map((e) => (
-              <Link
-                key={e.slug}
-                href={`/categoria/${e.slug}`}
-                className="shrink-0 px-4 py-2.5 text-sm font-medium text-ink-2 hover:text-teal hover:border-b-2 hover:border-teal transition-colors border-b-2 border-transparent"
-              >
-                {e.label}
-              </Link>
-            ))}
-            <Link href="/guia" className="shrink-0 px-4 py-2.5 text-sm font-medium text-ink-2 hover:text-teal hover:border-b-2 hover:border-teal transition-colors border-b-2 border-transparent">
-              Guia Comercial
-            </Link>
-            <Link href="/agenda" className="shrink-0 px-4 py-2.5 text-sm font-medium text-ink-2 hover:text-teal hover:border-b-2 hover:border-teal transition-colors border-b-2 border-transparent">
-              Agenda
-            </Link>
-            <Link href="/empregos" className="shrink-0 px-4 py-2.5 text-sm font-medium text-ink-2 hover:text-teal hover:border-b-2 hover:border-teal transition-colors border-b-2 border-transparent">
-              Empregos
-            </Link>
-          </div>
-
-          {/* Mobile: dropdown */}
-          {menuOpen && (
-            <div className="sm:hidden pb-3 flex flex-col gap-1">
-              {EDITORIAS_NAV.map((e) => (
-                <Link
-                  key={e.slug}
-                  href={`/categoria/${e.slug}`}
-                  className="px-3 py-2 text-sm font-medium text-ink-2 hover:text-teal hover:bg-teal-light rounded transition-colors"
-                  onClick={() => setMenuOpen(false)}
-                >
-                  {e.label}
-                </Link>
-              ))}
-              <Link href="/guia" className="px-3 py-2 text-sm font-medium text-ink-2 hover:text-teal hover:bg-teal-light rounded transition-colors" onClick={() => setMenuOpen(false)}>Guia Comercial</Link>
-              <Link href="/agenda" className="px-3 py-2 text-sm font-medium text-ink-2 hover:text-teal hover:bg-teal-light rounded transition-colors" onClick={() => setMenuOpen(false)}>Agenda</Link>
-              <Link href="/empregos" className="px-3 py-2 text-sm font-medium text-ink-2 hover:text-teal hover:bg-teal-light rounded transition-colors" onClick={() => setMenuOpen(false)}>Empregos</Link>
-              <Link href="/anuncie" className="mt-2 px-3 py-2 text-sm font-semibold bg-teal text-white rounded text-center" onClick={() => setMenuOpen(false)}>Anuncie aqui</Link>
-            </div>
-          )}
+      {/* Mobile scroll nav */}
+      <style>{`
+        .mobile-nav-bar { display: none; }
+        .mobile-nav-scroll { display: flex; overflow-x: auto; scrollbar-width: none; }
+        .mobile-nav-scroll::-webkit-scrollbar { display: none; }
+        @media (max-width: 899px) { .mobile-nav-bar { display: block; border-top: 1px solid var(--border); } }
+      `}</style>
+      <div className="mobile-nav-bar">
+        <div className="mobile-nav-scroll">
+          {[{ href: "/", label: "Home" }, ...navItems].map(({ href, label }) => (
+            <Link key={href} href={href} style={{
+              display: "block", padding: "8px 14px", fontSize: 13,
+              whiteSpace: "nowrap", flexShrink: 0, color: "var(--ink-3)",
+              borderBottom: "2px solid transparent",
+            }}>{label}</Link>
+          ))}
         </div>
-      </nav>
+      </div>
     </header>
   );
 }

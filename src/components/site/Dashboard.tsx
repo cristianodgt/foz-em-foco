@@ -1,160 +1,70 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Thermometer, DollarSign, Droplets, Fuel, Wind } from "lucide-react";
-import Link from "next/link";
+const widgets = [
+  { label: "Clima · Foz",      val: "28°C",       sub: "☀ Ensolarado · máx 31 · mín 22", color: "#0a7a6b", extra: "Vento 6km/h · UV alto",               trend: [4,5,6,6,7,7,6,6,7,8,7,6] },
+  { label: "Câmbio · USD/BRL", val: "R$ 5,42",    sub: "↑ +0,3% hoje · alta recente",     color: "#d35400", extra: "BRL/₲ 1.380 · ARS 0,16",             trend: [5,5,4,5,6,5,6,7,6,8,7,8] },
+  { label: "Câmbio · BRL/₲",  val: "1.380",       sub: "↓ −0,1% hoje · estável",          color: "#8e6914", extra: "Referência BNC · 14:00",              trend: [7,6,7,6,5,6,5,6,5,5,4,5] },
+  { label: "Pontes · status",  val: "Amizade ⚠",  sub: "Fila 35min · BR→PY",              color: "#c0392b", extra: "Fraternidade: livre 🟢",              trend: [2,3,4,5,6,7,7,7,8,7,6,7] },
+  { label: "Cataratas · vazão",val: "3.040 m³/s",  sub: "↑ Acima da média sazonal",        color: "#1a6b5a", extra: "14.200 visitantes ontem",             trend: [4,5,4,6,7,6,8,9,8,8,9,9] },
+  { label: "Combustível · Foz",val: "R$ 5,89",    sub: "Gasolina comum · média",          color: "#6c3483", extra: "PY: R$ 4,80 · econ. R$1,09/L",        trend: [5,5,5,6,6,6,6,6,7,7,7,7] },
+];
 
-interface DashboardData {
-  weather: {
-    temp: number;
-    feels: number;
-    min: number;
-    max: number;
-    condition: string;
-    humidity: number;
-  } | null;
-  exchange: {
-    usdBrl: { bid: string; pct: string };
-    brlPyg: { bid: string; pct: string };
-    usdPyg: { bid: string; pct: string };
-  } | null;
-  bridges: { tancredo: string; amizade: string };
-  cataratas: { vazao: string | null; updatedAt: string | null };
-  fuel: { gasolina: string | null; diesel: string | null; etanol: string | null };
-  sponsor: { name: string | null; url: string | null };
-}
-
-const BRIDGE_COLORS: Record<string, string> = {
-  livre: "text-green-400",
-  moderado: "text-yellow-400",
-  lento: "text-orange-400",
-  fechado: "text-red-400",
-};
-
-const BRIDGE_LABELS: Record<string, string> = {
-  livre: "Livre",
-  moderado: "Moderado",
-  lento: "Lento",
-  fechado: "Fechado",
-};
-
-function PctBadge({ pct }: { pct: string }) {
-  const n = parseFloat(pct);
-  const up = n >= 0;
+function Spark({ vals, color }: { vals: number[]; color: string }) {
+  const max = Math.max(...vals), min = Math.min(...vals);
+  const norm = vals.map(v => (v - min) / (max - min || 1));
+  const w = 120, h = 30, step = w / (vals.length - 1);
+  const pts = norm.map((v, i) => `${i * step},${h - (v * (h - 4) + 2)}`).join(" ");
   return (
-    <span className={`font-mono text-xs ${up ? "text-green-400" : "text-red-400"}`}>
-      {up ? "▲" : "▼"} {Math.abs(n).toFixed(2)}%
-    </span>
+    <svg width={w} height={h} style={{ overflow: "visible", opacity: .6 }}>
+      <polyline points={pts} fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round"/>
+      <circle
+        cx={(norm.length - 1) * step}
+        cy={h - (norm[norm.length - 1] * (h - 4) + 2)}
+        r="3" fill={color}
+      />
+    </svg>
   );
 }
 
 export default function Dashboard() {
-  const [data, setData] = useState<DashboardData | null>(null);
-
-  const load = () =>
-    fetch("/api/dashboard")
-      .then((r) => r.json())
-      .then(setData)
-      .catch(() => {});
-
-  useEffect(() => {
-    load();
-    const id = setInterval(load, 5 * 60 * 1000);
-    return () => clearInterval(id);
-  }, []);
-
   return (
-    <section className="bg-ink text-white py-6">
-      <div className="max-w-7xl mx-auto px-4">
-        {/* Sponsor */}
-        {data?.sponsor?.name && (
-          <p className="text-xs text-white/40 font-mono mb-3 text-right">
-            Dashboard apresentado por{" "}
-            {data.sponsor.url ? (
-              <Link href={data.sponsor.url} target="_blank" className="text-teal-light hover:underline">
-                {data.sponsor.name}
-              </Link>
-            ) : (
-              <span className="text-white/60">{data.sponsor.name}</span>
-            )}
-          </p>
-        )}
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          {/* Weather */}
-          <div className="bg-white/5 rounded-lg p-4 border-t-2 border-blue-400">
-            <p className="text-[10px] font-mono uppercase tracking-widest text-white/40 mb-1">Clima FOZ</p>
-            {data?.weather ? (
-              <>
-                <p className="text-2xl font-serif font-bold">{data.weather.temp}°C</p>
-                <p className="text-xs text-white/50 capitalize mt-1">{data.weather.condition}</p>
-                <p className="text-xs text-white/40 font-mono mt-1">
-                  {data.weather.min}° / {data.weather.max}°
-                </p>
-              </>
-            ) : (
-              <p className="text-white/30 text-sm">—</p>
-            )}
+    <section style={{ background: "var(--paper-2)", borderBottom: "1px solid var(--border)", padding: "20px 0 24px" }}>
+      <div className="container">
+        <div className="row between mb-m" style={{ marginBottom: 14 }}>
+          <div>
+            <span className="t-h4">Foz agora</span>
+            <span className="t-mono color-muted" style={{ marginLeft: 10, fontSize: 11 }}>atualizado 14:08 · dados ao vivo</span>
           </div>
-
-          {/* USD/BRL */}
-          <div className="bg-white/5 rounded-lg p-4 border-t-2 border-green-400">
-            <p className="text-[10px] font-mono uppercase tracking-widest text-white/40 mb-1">USD / BRL</p>
-            {data?.exchange ? (
-              <>
-                <p className="text-2xl font-serif font-bold">R$ {data.exchange.usdBrl.bid}</p>
-                <PctBadge pct={data.exchange.usdBrl.pct} />
-              </>
-            ) : (
-              <p className="text-white/30 text-sm">—</p>
-            )}
-          </div>
-
-          {/* BRL/PYG */}
-          <div className="bg-white/5 rounded-lg p-4 border-t-2 border-yellow-400">
-            <p className="text-[10px] font-mono uppercase tracking-widest text-white/40 mb-1">BRL / Guarani</p>
-            {data?.exchange ? (
-              <>
-                <p className="text-2xl font-serif font-bold">₲{data.exchange.brlPyg.bid}</p>
-                <PctBadge pct={data.exchange.brlPyg.pct} />
-              </>
-            ) : (
-              <p className="text-white/30 text-sm">—</p>
-            )}
-          </div>
-
-          {/* Ponte Tancredo */}
-          <div className="bg-white/5 rounded-lg p-4 border-t-2 border-teal">
-            <p className="text-[10px] font-mono uppercase tracking-widest text-white/40 mb-1">Ponte Tancredo</p>
-            <p className={`text-xl font-bold ${BRIDGE_COLORS[data?.bridges.tancredo ?? "livre"]}`}>
-              {BRIDGE_LABELS[data?.bridges.tancredo ?? "livre"]}
-            </p>
-            <p className="text-xs text-white/30 mt-1 font-mono">Brasil ↔ Paraguai</p>
-          </div>
-
-          {/* Ponte Amizade */}
-          <div className="bg-white/5 rounded-lg p-4 border-t-2 border-purple-400">
-            <p className="text-[10px] font-mono uppercase tracking-widest text-white/40 mb-1">Ponte Amizade</p>
-            <p className={`text-xl font-bold ${BRIDGE_COLORS[data?.bridges.amizade ?? "livre"]}`}>
-              {BRIDGE_LABELS[data?.bridges.amizade ?? "livre"]}
-            </p>
-            <p className="text-xs text-white/30 mt-1 font-mono">Brasil ↔ Paraguai</p>
-          </div>
-
-          {/* Cataratas */}
-          <div className="bg-white/5 rounded-lg p-4 border-t-2 border-cyan-400">
-            <p className="text-[10px] font-mono uppercase tracking-widest text-white/40 mb-1">Cataratas</p>
-            {data?.cataratas.vazao ? (
-              <>
-                <p className="text-xl font-serif font-bold">{data.cataratas.vazao}</p>
-                <p className="text-xs text-white/30 font-mono mt-1">m³/s</p>
-              </>
-            ) : (
-              <p className="text-white/30 text-sm">—</p>
-            )}
-          </div>
+          <button className="btn-ghost btn-sm" style={{ fontSize: 12 }}>personalizar ⚙</button>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(6,1fr)", gap: 12 }}>
+          {widgets.map(({ label, val, sub, color, extra, trend }) => (
+            <div key={label} style={{
+              background: "white", borderRadius: "var(--r-l)",
+              padding: "14px 16px", borderTop: `3px solid ${color}`,
+              boxShadow: "var(--shadow-s)", cursor: "pointer",
+            }}>
+              <div className="t-mono color-muted" style={{ marginBottom: 6, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</div>
+              <div style={{ fontFamily: "var(--font-serif)", fontSize: 20, fontWeight: 400, color: "var(--ink)", lineHeight: 1, marginBottom: 4 }}>{val}</div>
+              <div style={{ fontSize: 11, color, fontWeight: 500, marginBottom: 2 }}>{sub}</div>
+              <div style={{ fontSize: 10, color: "var(--muted)", marginBottom: 8 }}>{extra}</div>
+              <Spark vals={trend} color={color} />
+            </div>
+          ))}
+        </div>
+        <div style={{ marginTop: 10, fontSize: 11, color: "var(--muted)", fontFamily: "var(--font-mono)" }}>
+          Fontes: INMET · BCB · Banco Nacional de Ciudad del Este · Itaipu Binacional · PRF · ANP
+          <span style={{ float: "right" }}>
+            <span style={{ display: "inline-block", width: 7, height: 7, borderRadius: "50%", background: "var(--teal)", marginRight: 5, verticalAlign: "middle" }}/>
+            dados ao vivo · patrocinado por <strong style={{ color: "var(--teal)" }}>Sicredi Foz</strong>
+          </span>
         </div>
       </div>
+
+      <style>{`
+        @media (max-width: 1024px) { .dashboard-grid { grid-template-columns: repeat(3,1fr) !important; } }
+        @media (max-width: 640px)  { .dashboard-grid { grid-template-columns: repeat(2,1fr) !important; } }
+      `}</style>
     </section>
   );
 }

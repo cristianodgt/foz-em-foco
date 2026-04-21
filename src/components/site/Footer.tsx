@@ -1,130 +1,116 @@
 import Link from "next/link";
-import { Share2, Play, Link2, ExternalLink, Mail } from "lucide-react";
-
-const EDITORIAS = [
-  { label: "Cidade", slug: "cidade" },
-  { label: "Política", slug: "politica" },
-  { label: "Economia", slug: "economia" },
-  { label: "Turismo", slug: "turismo" },
-  { label: "Paraguai", slug: "paraguai" },
-  { label: "Cultura", slug: "cultura" },
-  { label: "Esporte", slug: "esporte" },
-  { label: "Itaipu", slug: "itaipu" },
-];
 
 export default function Footer() {
   return (
-    <footer className="bg-ink text-white mt-12">
-      <div className="max-w-7xl mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          {/* Col 1 — Brand */}
+    <footer style={{ background: "var(--ink)", color: "rgba(255,255,255,.75)", marginTop: 60 }}>
+      <div className="container" style={{ padding: "48px 20px 24px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 1.5fr", gap: 32, marginBottom: 40 }}>
+
+          {/* Brand */}
           <div>
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-9 h-9 rounded-full bg-teal flex items-center justify-center text-white font-bold text-sm">
-                FF
+            <div style={{ fontFamily: "var(--font-serif)", fontSize: 26, color: "white", marginBottom: 8 }}>
+              Foz <span style={{ color: "var(--teal-mid)" }}>em</span> Foco
+            </div>
+            <div style={{ fontSize: 14, opacity: .7, maxWidth: 260, lineHeight: 1.6, marginBottom: 16 }}>
+              Jornalismo local, utilidade pública e o que acontece na tríplice fronteira.
+            </div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {["App", "Podcast", "Newsletter", "RSS"].map(t => (
+                <span key={t} className="pill" style={{ background: "rgba(255,255,255,.1)", borderColor: "rgba(255,255,255,.2)", color: "rgba(255,255,255,.75)", fontSize: 12 }}>
+                  {t}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Editorial */}
+          <div>
+            <div style={{ fontSize: 12, fontFamily: "var(--font-mono)", letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(255,255,255,.4)", marginBottom: 14 }}>
+              Editorial
+            </div>
+            {["Cidade", "Política", "Economia", "Turismo", "Paraguai", "Cultura", "Esporte"].map(item => (
+              <div key={item} style={{ fontSize: 14, padding: "4px 0" }}>
+                <Link href={`/categoria/${item.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")}`} style={{ color: "rgba(255,255,255,.75)" }}>
+                  {item}
+                </Link>
               </div>
-              <span className="font-serif text-lg font-bold">Foz em Foco</span>
+            ))}
+          </div>
+
+          {/* Produtos */}
+          <div>
+            <div style={{ fontSize: 12, fontFamily: "var(--font-mono)", letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(255,255,255,.4)", marginBottom: 14 }}>
+              Produtos
             </div>
-            <p className="text-sm text-white/60 leading-relaxed mb-4">
-              O portal de notícias e utilidade pública de Foz do Iguaçu e da tríplice fronteira.
-            </p>
-            <div className="flex gap-3">
-              {[
-                { icon: Share2, href: "#", label: "Instagram" },
-                { icon: Link2, href: "#", label: "Facebook" },
-                { icon: ExternalLink, href: "#", label: "Twitter" },
-                { icon: Play, href: "#", label: "YouTube" },
-              ].map(({ icon: Icon, href, label }) => (
-                <a
-                  key={label}
-                  href={href}
-                  aria-label={label}
-                  className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-teal transition-colors"
-                >
-                  <Icon size={14} />
-                </a>
-              ))}
+            {[
+              ["Guia Comercial", "/guia"],
+              ["Agenda", "/agenda"],
+              ["Empregos", "/empregos"],
+              ["Classificados", "/classificados"],
+              ["Newsletter", "/newsletter"],
+            ].map(([label, href]) => (
+              <div key={href} style={{ fontSize: 14, padding: "4px 0" }}>
+                <Link href={href} style={{ color: "rgba(255,255,255,.75)" }}>{label}</Link>
+              </div>
+            ))}
+          </div>
+
+          {/* Empresa */}
+          <div>
+            <div style={{ fontSize: 12, fontFamily: "var(--font-mono)", letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(255,255,255,.4)", marginBottom: 14 }}>
+              Empresa
             </div>
+            {["Sobre nós", "Equipe", "Ética", "Contato", "Trabalhe conosco"].map(item => (
+              <div key={item} style={{ fontSize: 14, padding: "4px 0", color: "rgba(255,255,255,.75)" }}>{item}</div>
+            ))}
           </div>
 
-          {/* Col 2 — Editorias */}
+          {/* Anuncie */}
           <div>
-            <h4 className="text-sm font-semibold uppercase tracking-widest text-white/40 mb-4">Editorias</h4>
-            <ul className="space-y-2">
-              {EDITORIAS.map((e) => (
-                <li key={e.slug}>
-                  <Link
-                    href={`/categoria/${e.slug}`}
-                    className="text-sm text-white/70 hover:text-teal-light transition-colors"
-                  >
-                    {e.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Col 3 — Serviços */}
-          <div>
-            <h4 className="text-sm font-semibold uppercase tracking-widest text-white/40 mb-4">Serviços</h4>
-            <ul className="space-y-2">
-              {[
-                { label: "Guia Comercial", href: "/guia" },
-                { label: "Agenda de Eventos", href: "/agenda" },
-                { label: "Vagas de Emprego", href: "/empregos" },
-                { label: "Newsletter", href: "/newsletter" },
-                { label: "Anuncie Aqui", href: "/anuncie" },
-              ].map(({ label, href }) => (
-                <li key={href}>
-                  <Link href={href} className="text-sm text-white/70 hover:text-teal-light transition-colors">
-                    {label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Col 4 — Contato */}
-          <div>
-            <h4 className="text-sm font-semibold uppercase tracking-widest text-white/40 mb-4">Contato</h4>
-            <ul className="space-y-3">
-              <li>
-                <a href="mailto:redacao@fozemfoco.com.br" className="flex items-center gap-2 text-sm text-white/70 hover:text-teal-light transition-colors">
-                  <Mail size={14} />
-                  redacao@fozemfoco.com.br
-                </a>
-              </li>
-            </ul>
-            <div className="mt-6">
-              <Link
-                href="/newsletter"
-                className="inline-flex items-center gap-2 bg-teal text-white text-sm font-semibold px-4 py-2 rounded hover:bg-teal-dark transition-colors"
-              >
-                <Mail size={14} />
-                Assinar newsletter
+            <div style={{ fontSize: 12, fontFamily: "var(--font-mono)", letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(255,255,255,.4)", marginBottom: 14 }}>
+              Anuncie
+            </div>
+            <div style={{ fontSize: 14, lineHeight: 1.8, opacity: .8 }}>
+              <div>Formatos e planos</div>
+              <div>Mídia Kit (PDF)</div>
+              <div>Falar com consultor</div>
+            </div>
+            <Link href="/anuncie" className="btn btn-primary btn-sm" style={{ marginTop: 16, display: "inline-flex" }}>
+              Ver planos →
+            </Link>
+            <div style={{ marginTop: 8 }}>
+              <Link href="/admin" style={{
+                display: "flex", alignItems: "center", justifyContent: "center",
+                border: "1.5px solid rgba(255,255,255,.2)", borderRadius: "var(--r-m)",
+                color: "rgba(255,255,255,.5)", fontSize: 13, padding: "6px 14px",
+                marginTop: 6, width: "100%", textAlign: "center",
+              }}>
+                Admin ⚙
               </Link>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Bottom bar */}
-      <div className="border-t border-white/10">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-white/40">
-          <span>© {new Date().getFullYear()} Foz em Foco. Todos os direitos reservados.</span>
-          <span>
-            Desenvolvido por{" "}
-            <a
-              href="https://www.inovaefoz.com.br/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-teal-light transition-colors"
-            >
-              Inovae
-            </a>
-          </span>
+        <div style={{ borderTop: "1px solid rgba(255,255,255,.1)", paddingTop: 20, display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 12, fontSize: 12, opacity: .5 }}>
+          <span>© {new Date().getFullYear()} Foz em Foco · Todos os direitos reservados</span>
+          <span>Privacidade · Termos · Cookies · Anúncios</span>
+        </div>
+        <div style={{ borderTop: "1px solid rgba(255,255,255,.06)", marginTop: 16, paddingTop: 14, textAlign: "center", fontSize: 11, color: "rgba(255,255,255,.25)", fontFamily: "var(--font-mono)" }}>
+          Desenvolvido por{" "}
+          <a href="https://www.inovaefoz.com.br/" target="_blank" rel="noopener noreferrer" style={{ color: "rgba(255,255,255,.45)", fontWeight: 600 }}>
+            Inovae
+          </a>
         </div>
       </div>
+
+      <style>{`
+        @media (max-width: 1024px) {
+          .footer-grid { grid-template-columns: 1fr 1fr !important; }
+        }
+        @media (max-width: 640px) {
+          .footer-grid { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
     </footer>
   );
 }
