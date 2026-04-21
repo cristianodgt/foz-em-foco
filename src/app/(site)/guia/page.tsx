@@ -1,152 +1,197 @@
-"use client";
+'use client'
+import { useState } from 'react'
+import { RotatingAd } from '@/components/site/RotatingAd'
 
-import { useState } from "react";
-import Link from "next/link";
+const CATEGORIAS = [
+  { nome:'Restaurantes', count:312 },
+  { nome:'Hotéis',       count:87  },
+  { nome:'Saúde',        count:198 },
+  { nome:'Compras',      count:265 },
+  { nome:'Educação',     count:143 },
+  { nome:'Veículos',     count:91  },
+  { nome:'Beleza',       count:184 },
+  { nome:'Serviços',     count:220 },
+  { nome:'Turismo',      count:118 },
+  { nome:'Imóveis',      count:76  },
+]
 
-const CATS = [
-  ["Restaurantes",312],["Hotéis",87],["Saúde",198],["Compras",265],["Educação",143],
-  ["Veículos",91],["Beleza",184],["Serviços",220],["Turismo",118],["Imóveis",76],
-] as [string, number][];
+const TIER_COLOR: Record<string, string> = { OURO:'#d4a017', PRATA:'#888', '':'transparent' }
 
-const BUSINESSES = [
-  { tier:"OURO",  name:"Rafain Churrascaria",    cat:"Restaurante", rating:"4.8", reviews:1243, loc:"Vila Yolanda", feat:["Reserva online","Estacionamento","AC"], price:"R$80–R$150/pessoa", open:true },
-  { tier:"OURO",  name:"Tempero da Terra",        cat:"Restaurante", rating:"4.7", reviews:892,  loc:"Centro",       feat:["Petiscos","Cardápio executivo"],         price:"R$35–R$65/pessoa", open:true },
-  { tier:"PRATA", name:"Churrascaria Gaúcha",     cat:"Churrascaria",rating:"4.5", reviews:623,  loc:"Morumbi",      feat:["Rodízio","Estacionamento"],              price:"R$55–R$80/pessoa", open:true },
-  { tier:"PRATA", name:"Restaurante Recanto",     cat:"Restaurante", rating:"4.4", reviews:412,  loc:"Vila A",       feat:["Delivery"],                             price:"R$25–R$50",        open:false },
-  { tier:"",      name:"Bar do Tião",             cat:"Bar",         rating:"4.3", reviews:289,  loc:"Centro",       feat:["Chope artesanal"],                      price:"R$15–R$35",        open:true },
-  { tier:"",      name:"Lanchonete Boa Hora",     cat:"Lanchonete",  rating:"4.1", reviews:154,  loc:"Porto Meira",  feat:["Delivery"],                             price:"R$10–R$20",        open:true },
-];
+interface Business {
+  tier: string
+  name: string
+  category: string
+  rating: string
+  reviews: number
+  location: string
+  features: string[]
+  price: string
+  open: boolean
+}
 
-const TIER_COLOR: Record<string, string> = { OURO:"#d4a017", PRATA:"#888" };
+function BusinessCard({ business }: { business: Business }) {
+  const { tier, name, category, rating, reviews, location, features, price, open } = business
+  return (
+    <div style={{
+      background: 'white',
+      border: `1.5px solid ${tier==='OURO' ? '#d4a017' : tier==='PRATA' ? '#ccc' : '#e2e8f0'}`,
+      borderTop: tier ? `3px solid ${TIER_COLOR[tier]}` : undefined,
+      borderRadius: 12,
+      padding: '16px 20px',
+      marginBottom: 12,
+      boxShadow: tier==='OURO' ? '0 4px 12px rgba(0,0,0,0.08)' : '0 1px 3px rgba(0,0,0,0.06)',
+    }}>
+      <div style={{ display:'flex', gap:16, alignItems:'flex-start' }}>
+        <div style={{
+          width:100, flexShrink:0, borderRadius:8,
+          aspectRatio:'1/1',
+          background:'#dde2e8',
+          backgroundImage:'linear-gradient(135deg,#dde2e8 25%,#cdd2d8 25%,#cdd2d8 50%,#dde2e8 50%,#dde2e8 75%,#cdd2d8 75%)',
+          backgroundSize:'12px 12px',
+        }}/>
+        <div style={{ flex:1 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6 }}>
+            {tier==='OURO' && <span style={{ background:'#d4a017', color:'white', padding:'2px 10px', borderRadius:999, fontSize:11, fontWeight:700, fontFamily:'monospace' }}>★ OURO</span>}
+            {tier==='PRATA' && <span style={{ background:'#888', color:'white', padding:'2px 10px', borderRadius:999, fontSize:11, fontWeight:700, fontFamily:'monospace' }}>★ PRATA</span>}
+            <span style={{ fontSize:18, fontWeight:600 }}>{name}</span>
+          </div>
+          <div style={{ display:'flex', gap:8, alignItems:'center', marginBottom:8, flexWrap:'wrap' }}>
+            <span style={{ fontSize:13, color:'#888' }}>{category}</span>
+            <span style={{ fontSize:13, color:'#888' }}>· {location}</span>
+            <span style={{ fontSize:13, color:'#888' }}>· {price}</span>
+            <span style={{ marginLeft:'auto', fontSize:12, fontWeight:600, color: open ? '#27ae60' : '#c0392b' }}>
+              {open ? '● Aberto' : '○ Fechado'}
+            </span>
+          </div>
+          <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:10 }}>
+            {features.map(f => (
+              <span key={f} style={{ fontSize:11, padding:'3px 10px', border:'1px solid #e2e8f0', borderRadius:999, background:'white', color:'#555' }}>{f}</span>
+            ))}
+          </div>
+          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+            <span style={{ color:'#d4a017', fontSize:16 }}>★</span>
+            <strong style={{ fontSize:16 }}>{rating}</strong>
+            <span style={{ fontFamily:'monospace', fontSize:11, color:'#888' }}>{reviews.toLocaleString('pt-BR')} avaliações</span>
+            <div style={{ marginLeft:'auto', display:'flex', gap:8 }}>
+              <button style={{ padding:'6px 14px', border:'1.5px solid #e2e8f0', borderRadius:8, background:'white', fontSize:13, cursor:'pointer', fontWeight:500 }}>Ligar</button>
+              <button style={{ padding:'6px 14px', border:'1.5px solid #e2e8f0', borderRadius:8, background:'white', fontSize:13, cursor:'pointer', fontWeight:500 }}>Rota</button>
+              {tier==='OURO' && (
+                <button style={{ padding:'6px 14px', border:'none', borderRadius:8, background:'#0a7a6b', color:'white', fontSize:13, cursor:'pointer', fontWeight:600 }}>Reservar</button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function GuiaPage() {
-  const [activeCategory, setActiveCategory] = useState("Restaurantes");
-  const [search, setSearch] = useState("");
+  const [activeCategory, setActiveCategory] = useState('Restaurantes')
+
+  const businesses: Business[] = [
+    { tier:'OURO',  name:'Rafain Churrascaria', category:'Restaurante', rating:'4.8', reviews:1243, location:'Vila Yolanda', features:['Reserva online','Estacionamento','AC'], price:'R$80–R$150/pessoa', open:true },
+    { tier:'OURO',  name:'Tempero da Terra',    category:'Restaurante', rating:'4.7', reviews:892,  location:'Centro',       features:['Delivery','Aceita Pix'],               price:'R$40–R$80/pessoa',  open:true },
+    { tier:'PRATA', name:'Trapiche',            category:'Bar e Rest.', rating:'4.6', reviews:634,  location:'Gramadão',     features:['Música ao vivo'],                     price:'R$30–R$60/pessoa',  open:true },
+    { tier:'',      name:'Pizza dos Amigos',    category:'Pizzaria',   rating:'4.4', reviews:412,  location:'Vila A',       features:['Delivery'],                           price:'R$25–R$50',         open:false },
+    { tier:'',      name:'Bar do Tião',         category:'Bar',        rating:'4.3', reviews:289,  location:'Centro',       features:['Chope artesanal'],                    price:'R$15–R$35',         open:true },
+  ]
 
   return (
-    <>
-      {/* Hero */}
-      <div style={{ background: "var(--ink)", padding: "32px 0" }}>
-        <div className="container">
-          <h1 style={{ fontFamily: "var(--font-serif)", fontSize: "clamp(28px,4vw,44px)", color: "white", marginBottom: 6 }}>Guia de Foz &amp; Região</h1>
-          <div className="t-mono" style={{ color: "rgba(255,255,255,.5)", marginBottom: 20, fontSize: 12 }}>1.847 negócios · 12 mil avaliações verificadas · atualizado diariamente</div>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <input
-              className="input"
-              placeholder="Buscar negócio, bairro ou categoria…"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              style={{ flex: 1, minWidth: 280, maxWidth: 480 }}
-            />
-            <button className="btn btn-primary">Buscar</button>
-            <button className="btn btn-sm" style={{ background: "rgba(255,255,255,.1)", color: "white", border: "1px solid rgba(255,255,255,.15)" }}>Próximo a mim</button>
+    <div>
+      <div style={{ background:'#111', padding:'32px 0' }}>
+        <div style={{ maxWidth:1280, margin:'0 auto', padding:'0 32px' }}>
+          <h1 style={{ fontFamily:'DM Serif Display, Georgia, serif', fontSize:'clamp(28px,4vw,44px)', color:'white', marginBottom:6 }}>Guia de Foz & Região</h1>
+          <div style={{ fontFamily:'monospace', color:'rgba(255,255,255,0.5)', marginBottom:20, fontSize:12 }}>1.847 negócios · 12 mil avaliações verificadas · atualizado diariamente</div>
+          <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
+            <input placeholder="Buscar restaurante, hotel, médico, serviço..." style={{ flex:2, minWidth:200, padding:'10px 14px', border:'1.5px solid rgba(255,255,255,0.2)', borderRadius:8, background:'rgba(255,255,255,0.1)', color:'white', fontSize:15, outline:'none' }}/>
+            <input placeholder="Bairro · qualquer" style={{ flex:1, minWidth:140, padding:'10px 14px', border:'1.5px solid rgba(255,255,255,0.2)', borderRadius:8, background:'rgba(255,255,255,0.1)', color:'white', fontSize:15, outline:'none' }}/>
+            <button style={{ padding:'10px 20px', background:'#0a7a6b', color:'white', border:'none', borderRadius:8, fontWeight:600, fontSize:14, cursor:'pointer' }}>Buscar</button>
+          </div>
+          <div style={{ display:'flex', gap:8, marginTop:12, flexWrap:'wrap', alignItems:'center' }}>
+            <span style={{ fontFamily:'monospace', fontSize:11, color:'rgba(255,255,255,0.4)' }}>POPULARES:</span>
+            {['Aberto agora','Com delivery','Pet friendly','Aceita Pix','Vista pro rio'].map(t => (
+              <button key={t} style={{ padding:'3px 10px', border:'1px solid rgba(255,255,255,0.2)', borderRadius:999, background:'rgba(255,255,255,0.1)', color:'rgba(255,255,255,0.8)', fontSize:12, cursor:'pointer' }}>{t}</button>
+            ))}
           </div>
         </div>
       </div>
 
-      <div className="container" style={{ padding: "32px 20px" }}>
-        {/* Category grid */}
-        <div className="sec-label bold mb-m">Categorias</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 8, marginBottom: 24 }}>
-          {CATS.map(([n, c]) => (
-            <button
-              key={n}
-              onClick={() => setActiveCategory(n)}
-              style={{
-                padding: "10px 8px", borderRadius: "var(--r-m)", border: "1.5px solid",
-                borderColor: activeCategory === n ? "var(--teal)" : "var(--border)",
-                background: activeCategory === n ? "var(--teal-pale)" : "white",
-                cursor: "pointer", textAlign: "center",
-              }}
-            >
-              <div style={{ fontWeight: 600, fontSize: 14, color: activeCategory === n ? "var(--teal)" : "var(--ink)" }}>{n}</div>
-              <div className="t-mono color-muted" style={{ fontSize: 10, marginTop: 2 }}>{c} negócios</div>
+      <div style={{ maxWidth:1280, margin:'0 auto', padding:'32px' }}>
+
+        <div style={{ fontFamily:'monospace', fontSize:11, fontWeight:600, letterSpacing:'0.12em', textTransform:'uppercase', color:'#888', marginBottom:12 }}>Categorias</div>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:8, marginBottom:28 }}>
+          {CATEGORIAS.map(({ nome, count }) => (
+            <button key={nome} onClick={() => setActiveCategory(nome)} style={{
+              padding:'12px 8px', border:`1px solid ${activeCategory===nome ? '#0a7a6b' : '#e2e8f0'}`,
+              borderRadius:8, cursor:'pointer', textAlign:'left',
+              background: activeCategory===nome ? '#f2faf9' : 'white',
+              transition:'all 0.15s',
+            }}>
+              <div style={{ fontWeight:600, fontSize:14, color: activeCategory===nome ? '#0a7a6b' : '#111', marginBottom:2 }}>{nome}</div>
+              <div style={{ fontFamily:'monospace', fontSize:11, color:'#888' }}>{count} negócios</div>
             </button>
           ))}
         </div>
 
-        <div className="grid-main-side">
-          {/* Business list */}
-          <div>
-            <div className="sec-label bold" style={{ marginBottom: 12 }}>{activeCategory} em Foz</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {BUSINESSES.map((b) => (
-                <div key={b.name} style={{
-                  background: "white", border: "1.5px solid",
-                  borderColor: b.tier === "OURO" ? "#e8c060" : "var(--border)",
-                  borderRadius: "var(--r-l)", padding: "16px 20px",
-                  display: "flex", gap: 16, alignItems: "flex-start",
-                  boxShadow: "var(--shadow-s)",
-                }}>
-                  {/* Thumbnail placeholder */}
-                  <div className="imgph" data-label="foto" style={{ width: 80, height: 80, flexShrink: 0, borderRadius: "var(--r-m)" }} />
+        <div style={{ display:'grid', gridTemplateColumns:'220px 1fr 340px', gap:24 }}>
 
-                  <div style={{ flex: 1 }}>
-                    <div className="row" style={{ gap: 8, marginBottom: 4 }}>
-                      {b.tier && (
-                        <span className="t-mono" style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", color: TIER_COLOR[b.tier], background: b.tier === "OURO" ? "#fef9ec" : "#f5f5f5", padding: "2px 7px", borderRadius: 3 }}>
-                          {b.tier}
-                        </span>
-                      )}
-                      <span style={{ fontWeight: 700, fontSize: 16 }}>{b.name}</span>
-                      <span className="t-mono color-muted" style={{ fontSize: 11 }}>{b.cat}</span>
-                    </div>
-                    <div className="row" style={{ gap: 12, marginBottom: 8 }}>
-                      <span style={{ color: "#f59e0b", fontSize: 14 }}>{"★".repeat(Math.round(parseFloat(b.rating)))}{"☆".repeat(5 - Math.round(parseFloat(b.rating)))}</span>
-                      <span style={{ fontWeight: 700, fontSize: 14 }}>{b.rating}</span>
-                      <span className="t-mono color-muted" style={{ fontSize: 11 }}>({b.reviews.toLocaleString()} avaliações)</span>
-                      <span className="t-mono color-muted" style={{ fontSize: 11 }}>📍 {b.loc}</span>
-                    </div>
-                    <div className="row" style={{ gap: 6, flexWrap: "wrap" }}>
-                      {b.feat.map(f => <span key={f} className="pill">{f}</span>)}
-                    </div>
-                  </div>
-
-                  <div style={{ textAlign: "right", flexShrink: 0 }}>
-                    <div style={{ fontSize: 12, color: b.open ? "var(--success)" : "var(--danger)", fontWeight: 600, marginBottom: 4, fontFamily: "var(--font-mono)" }}>
-                      {b.open ? "● Aberto" : "○ Fechado"}
-                    </div>
-                    <div className="t-mono color-muted" style={{ fontSize: 11, marginBottom: 10 }}>{b.price}</div>
-                    <button className="btn btn-outline btn-sm">Ver perfil</button>
-                  </div>
+          <div style={{ background:'white', border:'1px solid #e2e8f0', borderRadius:12, padding:20, alignSelf:'start' }}>
+            <div style={{ fontWeight:600, fontSize:16, marginBottom:14 }}>Filtros</div>
+            {([['Aberto agora',true],['Aceita reserva',false],['Delivery',false],['Pet friendly',false],['Acessível',false],['Aceita Pix',true]] as [string, boolean][]).map(([label, checked]) => (
+              <label key={label} style={{ display:'flex', gap:10, alignItems:'center', padding:'7px 0', borderBottom:'1px solid #e2e8f0', cursor:'pointer', fontSize:14 }}>
+                <div style={{ width:18, height:18, borderRadius:4, border:`1.5px solid ${checked ? '#0a7a6b' : '#e2e8f0'}`, background: checked ? '#0a7a6b' : 'white', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                  {checked && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4l3 3 5-6" stroke="white" strokeWidth="1.5" strokeLinecap="round"/></svg>}
                 </div>
+                {label}
+              </label>
+            ))}
+            <div style={{ fontFamily:'monospace', fontSize:11, color:'#888', marginTop:16, marginBottom:8, textTransform:'uppercase', letterSpacing:'0.06em' }}>Faixa de Preço</div>
+            <div style={{ display:'flex', gap:6 }}>
+              {['$','$$','$$$','$$$$'].map(p => (
+                <button key={p} style={{ padding:'4px 8px', border:'1.5px solid #e2e8f0', borderRadius:6, background:'white', fontSize:13, cursor:'pointer' }}>{p}</button>
               ))}
             </div>
+            <div style={{ fontFamily:'monospace', fontSize:11, color:'#888', marginTop:16, marginBottom:8, textTransform:'uppercase', letterSpacing:'0.06em' }}>Avaliação</div>
+            {['4.5+','4+','Todos'].map(r => (
+              <label key={r} style={{ display:'flex', gap:8, padding:'5px 0', fontSize:13, cursor:'pointer', alignItems:'center' }}>
+                <input type="radio" name="rating" style={{ accentColor:'#0a7a6b' }}/> {r}
+              </label>
+            ))}
+          </div>
 
-            <div style={{ background: "var(--ad-bg)", border: "1px dashed var(--ad-border)", borderRadius: "var(--r-m)", height: 200, display: "flex", alignItems: "center", justifyContent: "center", marginTop: 24 }}>
-              <span className="t-mono" style={{ color: "var(--ad)", fontSize: 11 }}>PUBLICIDADE · 970×250</span>
+          <div>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
+              <div style={{ fontSize:14, color:'#888' }}><strong style={{ color:'#111' }}>312 resultados</strong> · {activeCategory} em Foz</div>
+              <select style={{ padding:'6px 12px', border:'1.5px solid #e2e8f0', borderRadius:8, fontSize:13, background:'white' }}>
+                <option>Relevância</option><option>Avaliação</option><option>Mais avaliados</option>
+              </select>
+            </div>
+            {businesses.map(b => <BusinessCard key={b.name} business={b} />)}
+            <RotatingAd slotId="leaderboard" height={100} />
+          </div>
+
+          <div style={{ alignSelf:'start', position:'sticky', top:80 }}>
+            <div style={{
+              borderRadius:12, border:'1px solid #e2e8f0', overflow:'hidden',
+              aspectRatio:'3/4', background:'#dde2e8',
+              backgroundImage:'linear-gradient(135deg,#dde2e8 25%,#cdd2d8 25%,#cdd2d8 50%,#dde2e8 50%,#dde2e8 75%,#cdd2d8 75%)',
+              backgroundSize:'20px 20px', minHeight:360, display:'flex', alignItems:'center', justifyContent:'center',
+              color:'#888', fontFamily:'monospace', fontSize:11,
+            }}>mapa interativo · pins por tier</div>
+            <div style={{ background:'white', border:'1px solid #e2e8f0', borderRadius:12, padding:16, marginTop:16 }}>
+              <div style={{ fontFamily:'monospace', fontSize:10, color:'#888', marginBottom:8, textTransform:'uppercase', letterSpacing:'0.08em' }}>Anuncie no Guia</div>
+              <div style={{ fontFamily:'DM Serif Display, serif', fontSize:18, marginBottom:6 }}>Destaque seu negócio</div>
+              <div style={{ fontSize:13, color:'#888', marginBottom:12 }}>Plano Ouro a partir de R$ 299/mês · média de 340 visualizações/mês</div>
+              <a href="/anuncie" style={{ display:'block', width:'100%', padding:'10px', background:'#0a7a6b', color:'white', border:'none', borderRadius:8, fontWeight:600, fontSize:14, cursor:'pointer', textAlign:'center', textDecoration:'none', boxSizing:'border-box' }}>Ver planos →</a>
+            </div>
+            <div style={{ marginTop:16 }}>
+              <RotatingAd slotId="leaderboard" height={250} />
             </div>
           </div>
 
-          {/* Sidebar */}
-          <aside className="sidebar-sticky">
-            <div style={{ background: "var(--ad-bg)", border: "1px dashed var(--ad-border)", borderRadius: "var(--r-m)", height: 250, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <span className="t-mono" style={{ color: "var(--ad)", fontSize: 11 }}>PUBLICIDADE · 300×250</span>
-            </div>
-
-            <div style={{ background: "white", border: "1px solid var(--border)", borderRadius: "var(--r-l)", padding: 20, boxShadow: "var(--shadow-s)" }}>
-              <div className="t-h4" style={{ marginBottom: 12 }}>Mais avaliados</div>
-              {["Rafain Churrascaria","Hotel Bourbon Cataratas","Parque das Aves","Belmond Das Cataratas","Sky Grill"].map((n, i) => (
-                <div key={n} style={{ display: "flex", gap: 10, alignItems: "center", padding: "8px 0", borderBottom: i < 4 ? "1px solid var(--border)" : "none" }}>
-                  <span style={{ fontFamily: "var(--font-serif)", fontSize: 22, color: "var(--teal)", width: 28, textAlign: "center" }}>{i + 1}</span>
-                  <span style={{ fontSize: 13, fontWeight: 500 }}>{n}</span>
-                </div>
-              ))}
-            </div>
-
-            <div style={{ background: "var(--teal)", color: "white", borderRadius: "var(--r-l)", padding: 20 }}>
-              <div className="t-mono" style={{ fontSize: 10, opacity: .6, marginBottom: 8, letterSpacing: "0.1em" }}>ANUNCIE NO GUIA</div>
-              <div style={{ fontFamily: "var(--font-serif)", fontSize: 20, marginBottom: 6 }}>Destaque seu negócio</div>
-              <div style={{ fontSize: 13, opacity: .85, marginBottom: 14 }}>A partir de R$ 149/mês · média de 1.2k visitas</div>
-              <Link href="/anuncie">
-                <button style={{ background: "white", color: "var(--teal)", border: "none", borderRadius: "var(--r-m)", padding: "10px 20px", fontWeight: 700, fontSize: 13, width: "100%", cursor: "pointer" }}>
-                  Cadastrar meu negócio →
-                </button>
-              </Link>
-            </div>
-          </aside>
         </div>
       </div>
-    </>
-  );
+    </div>
+  )
 }
