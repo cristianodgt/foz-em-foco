@@ -10,8 +10,8 @@ export default async function AnunciosPage() {
   const rows: AdvertiserRow[] = advertisers.map((adv) => ({
     id: adv.id,
     name: adv.name,
-    segment: adv.segment,
-    email: adv.email,
+    segment: adv.segment ?? "",
+    email: adv.email ?? "",
     campaigns: adv.campaigns.map((c) => ({
       id: c.id,
       name: c.name,
