@@ -2,11 +2,15 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Plus, Calendar } from "lucide-react";
+
+const TEAL = "#0a7a6b";
+const INK = "#111";
+const MUTED = "#6b7280";
+const BORDER = "#e5e7eb";
+const BG = "#fafaf8";
 
 type SlotId = "leaderboard" | "mpu1" | "infeed" | "halfpage" | "sticky";
 
-// Map DB AdSlotType to diagram slot ids
 function mapSlot(slot: string): SlotId | null {
   switch (slot) {
     case "leaderboard": return "leaderboard";
@@ -14,21 +18,21 @@ function mapSlot(slot: string): SlotId | null {
     case "infeed": return "infeed";
     case "halfpage": return "halfpage";
     case "sticky": return "sticky";
-    default: return null; // newsletter, section, video -> no diagram position
+    default: return null;
   }
 }
 
 function PageDiagram({ highlighted }: { highlighted: string | null }) {
   const slots: Record<SlotId, { top: string; left: string; width: string; height: string; color: string; label: string }> = {
-    leaderboard: { top: "12%", left: "10%", width: "80%", height: "8%", color: "#0a7a6b", label: "Leaderboard" },
+    leaderboard: { top: "12%", left: "10%", width: "80%", height: "8%", color: TEAL, label: "Leaderboard" },
     mpu1: { top: "24%", left: "72%", width: "18%", height: "18%", color: "#1e4d8c", label: "MPU" },
     infeed: { top: "44%", left: "10%", width: "58%", height: "10%", color: "#d35400", label: "Nativo in-feed" },
     halfpage: { top: "46%", left: "72%", width: "18%", height: "30%", color: "#6c3483", label: "Half Page" },
     sticky: { top: "88%", left: "10%", width: "80%", height: "7%", color: "#c0392b", label: "Sticky Bottom" },
   };
   return (
-    <div style={{ position: "relative", width: "100%", paddingTop: "62%", background: "#f8f9fa", border: "1px solid #e2e8f0", borderRadius: 8, overflow: "hidden" }}>
-      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "8%", background: "#fff", borderBottom: "1px solid #eee", display: "flex", alignItems: "center", padding: "0 4%", gap: "2%" }}>
+    <div style={{ position: "relative", width: "100%", paddingTop: "62%", background: BG, border: `1px solid ${BORDER}`, borderRadius: 10, overflow: "hidden" }}>
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "8%", background: "#fff", borderBottom: `1px solid ${BORDER}`, display: "flex", alignItems: "center", padding: "0 4%", gap: "2%" }}>
         <div style={{ width: "12%", height: "50%", background: "#ddd", borderRadius: 2 }} />
         <div style={{ width: "40%", height: "35%", background: "#eee", borderRadius: 2 }} />
       </div>
@@ -45,12 +49,12 @@ function PageDiagram({ highlighted }: { highlighted: string | null }) {
         return (
           <div key={id} style={{
             position: "absolute", top: s.top, left: s.left, width: s.width, height: s.height,
-            background: isActive ? s.color : "rgba(0,0,0,.06)",
+            background: isActive ? s.color : "rgba(0,0,0,.05)",
             border: `2px ${isActive ? "solid" : "dashed"} ${isActive ? s.color : "rgba(0,0,0,.15)"}`,
-            borderRadius: 3, display: "flex", alignItems: "center", justifyContent: "center",
-            transition: "all .25s", cursor: "pointer",
+            borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center",
+            transition: "all .2s", cursor: "pointer",
           }}>
-            {isActive && <span style={{ color: "white", fontSize: 9, fontFamily: "monospace", fontWeight: 700, textAlign: "center", lineHeight: 1.2, padding: "2px 4px" }}>{s.label}</span>}
+            {isActive && <span style={{ color: "white", fontSize: 10, fontFamily: "var(--font-mono)", fontWeight: 700, textAlign: "center", lineHeight: 1.2, padding: "2px 4px" }}>{s.label}</span>}
           </div>
         );
       })}
@@ -76,98 +80,191 @@ export type AdvertiserRow = {
 export default function AnunciosClient({ advertisers }: { advertisers: AdvertiserRow[] }) {
   const [activeSlot, setActiveSlot] = useState<string | null>(null);
 
+  const now = new Date();
+  const totalAdvertisers = advertisers.length;
+  const totalActive = advertisers.reduce(
+    (acc, a) => acc + a.campaigns.filter((c) => c.active && new Date(c.endDate) >= now).length,
+    0
+  );
+  const totalCreatives = advertisers.reduce(
+    (acc, a) => acc + a.campaigns.reduce((s, c) => s + c.creatives.length, 0),
+    0
+  );
+  const totalPending = advertisers.reduce(
+    (acc, a) => acc + a.campaigns.filter((c) => !c.active).length,
+    0
+  );
+
+  const kpis = [
+    { label: "Anunciantes", value: totalAdvertisers.toString(), color: TEAL },
+    { label: "Campanhas ativas", value: totalActive.toString(), color: "#047857" },
+    { label: "Criativos", value: totalCreatives.toString(), color: "#d35400" },
+    { label: "Pendentes", value: totalPending.toString(), color: "#92400e" },
+  ];
+
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-white">Anúncios</h1>
-        <Link href="/admin/anuncios/novo" className="flex items-center gap-2 bg-teal text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-teal-dark transition-colors">
-          <Plus size={16} /> Novo anunciante
-        </Link>
+    <div style={{ background: BG, minHeight: "100vh", padding: "24px 28px" }}>
+      {/* Hero */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24, flexWrap: "wrap", gap: 16 }}>
+        <div>
+          <div style={{ fontFamily: "var(--font-serif)", fontSize: 32, color: INK, lineHeight: 1.1, marginBottom: 4 }}>
+            Anúncios
+          </div>
+          <div style={{ fontSize: 13, color: MUTED, fontFamily: "var(--font-mono)" }}>
+            {totalAdvertisers} anunciantes · {totalActive} campanhas ativas
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 10 }}>
+          <Link href="/admin/anuncios/relatorios" style={{
+            display: "flex", alignItems: "center", gap: 6, padding: "9px 14px",
+            border: `1px solid ${BORDER}`, borderRadius: 8, background: "white",
+            fontSize: 13, color: INK, textDecoration: "none", fontWeight: 500,
+          }}>
+            Relatórios
+          </Link>
+          <Link href="/admin/anuncios/novo" style={{
+            display: "flex", alignItems: "center", gap: 6, padding: "9px 16px",
+            background: TEAL, borderRadius: 8, fontSize: 13, color: "white",
+            textDecoration: "none", fontWeight: 600,
+          }}>
+            + Novo anunciante
+          </Link>
+        </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 420px", gap: 32, alignItems: "start" }}>
-        <div className="grid grid-cols-1 gap-4">
+      {/* KPI Row */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, marginBottom: 24 }}>
+        {kpis.map((k, i) => (
+          <div key={i} style={{
+            background: "white", border: `1px solid ${BORDER}`, borderRadius: 14,
+            padding: "18px 20px", position: "relative", overflow: "hidden",
+          }}>
+            <div style={{ position: "absolute", top: 0, left: 0, width: 3, height: "100%", background: k.color }} />
+            <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", color: MUTED, textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600, marginBottom: 10 }}>{k.label}</div>
+            <div style={{ fontFamily: "var(--font-serif)", fontSize: 30, lineHeight: 1, color: INK }}>{k.value}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Main grid: lista + diagrama sticky */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 420px", gap: 20, alignItems: "start" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           {advertisers.map((adv) => {
-            const active = adv.campaigns.filter((c) => c.active && new Date(c.endDate) >= new Date());
-            const totalCreatives = adv.campaigns.reduce((s, c) => s + c.creatives.length, 0);
+            const active = adv.campaigns.filter((c) => c.active && new Date(c.endDate) >= now);
+            const totalC = adv.campaigns.reduce((s, c) => s + c.creatives.length, 0);
 
             return (
-              <div key={adv.id} className="bg-gray-900 border border-white/5 rounded-xl p-5">
-                <div className="flex items-start justify-between">
+              <div key={adv.id} style={{ background: "white", border: `1px solid ${BORDER}`, borderRadius: 14, overflow: "hidden" }}>
+                <div style={{ padding: "16px 22px", borderBottom: `1px solid ${BORDER}`, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
                   <div>
-                    <h3 className="text-white font-semibold">{adv.name}</h3>
-                    <p className="text-xs text-white/40 font-mono mt-0.5">{adv.segment} · {adv.email}</p>
+                    <div style={{ fontFamily: "var(--font-serif)", fontSize: 17, color: INK, marginBottom: 2 }}>{adv.name}</div>
+                    <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                      {adv.segment || "sem segmento"} · {adv.email || "sem email"}
+                    </div>
                   </div>
-                  <div className="flex gap-2 text-xs font-mono">
-                    <span className="bg-blue-900/50 text-blue-400 px-2 py-0.5 rounded">{active.length} campanha(s) ativa(s)</span>
-                    <span className="bg-gray-800 text-white/40 px-2 py-0.5 rounded">{totalCreatives} criativos</span>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <span style={{
+                      fontSize: 11, fontFamily: "var(--font-mono)", fontWeight: 700,
+                      padding: "3px 8px", borderRadius: 99,
+                      background: "#e6f9f3", color: "#047857",
+                    }}>
+                      {active.length} ATIVA(S)
+                    </span>
+                    <span style={{
+                      fontSize: 11, fontFamily: "var(--font-mono)", fontWeight: 700,
+                      padding: "3px 8px", borderRadius: 99,
+                      background: "#f3f4f6", color: MUTED,
+                    }}>
+                      {totalC} CRIATIVOS
+                    </span>
                   </div>
                 </div>
 
-                {adv.campaigns.length > 0 && (
-                  <div className="mt-4 flex flex-col gap-2">
-                    {adv.campaigns.map((c) => {
-                      const isActive = c.active && new Date(c.endDate) >= new Date();
-                      const campaignSlot = c.creatives[0]?.slot ? mapSlot(c.creatives[0].slot) : null;
-                      return (
-                        <div
-                          key={c.id}
-                          className="flex items-center gap-3 text-sm border-t border-white/5 pt-2"
-                          onMouseEnter={() => campaignSlot && setActiveSlot(campaignSlot)}
-                          onMouseLeave={() => setActiveSlot(null)}
-                          style={{ cursor: campaignSlot ? "pointer" : "default" }}
-                        >
-                          <Calendar size={12} className="text-white/30" />
-                          <span className="text-white/60">{c.name}</span>
-                          <span className="text-white/30 font-mono text-xs">
-                            {new Date(c.startDate).toLocaleDateString("pt-BR")} — {new Date(c.endDate).toLocaleDateString("pt-BR")}
-                          </span>
-                          <span className={`ml-auto text-xs px-2 py-0.5 rounded font-mono ${isActive ? "bg-green-900/50 text-green-400" : "bg-gray-800 text-white/30"}`}>
-                            {isActive ? "ativo" : "encerrado"}
-                          </span>
-                          <span className="text-xs text-white/30">{c.creatives.length} criativos</span>
-                        </div>
-                      );
-                    })}
-                    {/* Per-creative hover rows */}
-                    {adv.campaigns.flatMap((c) =>
-                      c.creatives.map((cr) => {
-                        const slot = mapSlot(cr.slot);
-                        return (
-                          <div
-                            key={cr.id}
-                            onMouseEnter={() => slot && setActiveSlot(slot)}
-                            onMouseLeave={() => setActiveSlot(null)}
-                            className="flex items-center gap-3 text-xs text-white/40 pl-6 py-1 font-mono"
-                            style={{ cursor: slot ? "pointer" : "default" }}
-                          >
-                            <span>▸ {c.name}</span>
-                            <span className="text-white/30">slot: {cr.slot}</span>
-                          </div>
-                        );
-                      })
-                    )}
+                {adv.campaigns.length === 0 ? (
+                  <div style={{ padding: "22px 24px", fontSize: 13, color: MUTED }}>
+                    Nenhuma campanha cadastrada.
                   </div>
+                ) : (
+                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                    <thead>
+                      <tr style={{ background: BG }}>
+                        {["Campanha", "Período", "Criativos", "Status"].map((h, i) => (
+                          <th key={i} style={{
+                            padding: "10px 14px", fontSize: 11, fontFamily: "var(--font-mono)",
+                            color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em",
+                            textAlign: "left", fontWeight: 600,
+                          }}>
+                            {h}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {adv.campaigns.map((c, i) => {
+                        const isActive = c.active && new Date(c.endDate) >= now;
+                        const campaignSlot = c.creatives[0]?.slot ? mapSlot(c.creatives[0].slot) : null;
+                        return (
+                          <tr
+                            key={c.id}
+                            style={{ borderTop: i > 0 ? `1px solid ${BORDER}` : "none", cursor: campaignSlot ? "pointer" : "default" }}
+                            onMouseEnter={() => campaignSlot && setActiveSlot(campaignSlot)}
+                            onMouseLeave={() => setActiveSlot(null)}
+                          >
+                            <td style={{ padding: "12px 14px", fontSize: 13, color: INK, fontWeight: 500 }}>{c.name}</td>
+                            <td style={{ padding: "12px 14px", fontSize: 12, fontFamily: "var(--font-mono)", color: MUTED }}>
+                              {new Date(c.startDate).toLocaleDateString("pt-BR")} — {new Date(c.endDate).toLocaleDateString("pt-BR")}
+                            </td>
+                            <td style={{ padding: "12px 14px", fontSize: 12, fontFamily: "var(--font-mono)", color: INK }}>
+                              {c.creatives.map((cr) => cr.slot).join(", ") || "—"}
+                            </td>
+                            <td style={{ padding: "12px 14px" }}>
+                              <span style={{
+                                fontSize: 11, fontFamily: "var(--font-mono)", fontWeight: 700,
+                                padding: "3px 8px", borderRadius: 99,
+                                background: isActive ? "#e6f9f3" : "#f3f4f6",
+                                color: isActive ? "#047857" : MUTED,
+                              }}>
+                                {isActive ? "ATIVO" : "ENCERRADO"}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 )}
               </div>
             );
           })}
 
           {advertisers.length === 0 && (
-            <div className="text-center py-20 text-white/30">
-              <p className="text-4xl mb-3">📢</p>
-              <p>Nenhum anunciante cadastrado.</p>
+            <div style={{
+              background: "white", border: `1px solid ${BORDER}`, borderRadius: 14,
+              padding: "60px 24px", textAlign: "center",
+            }}>
+              <div style={{ width: 48, height: 48, borderRadius: 12, background: "#f3f4f6", margin: "0 auto 14px", display: "flex", alignItems: "center", justifyContent: "center", color: MUTED, fontSize: 22, fontFamily: "var(--font-serif)" }}>A</div>
+              <div style={{ fontFamily: "var(--font-serif)", fontSize: 20, color: INK, marginBottom: 6 }}>Nenhum anunciante</div>
+              <div style={{ fontSize: 13, color: MUTED, marginBottom: 16 }}>Cadastre o primeiro anunciante para começar a vender espaços.</div>
+              <Link href="/admin/anuncios/novo" style={{
+                display: "inline-flex", padding: "9px 16px", background: TEAL, color: "white",
+                borderRadius: 8, fontSize: 13, fontWeight: 600, textDecoration: "none",
+              }}>
+                + Novo anunciante
+              </Link>
             </div>
           )}
         </div>
 
-        <div style={{ position: "sticky", top: 32 }}>
-          <div style={{ fontSize: 12, color: "#888", fontFamily: "monospace", marginBottom: 8, textAlign: "center" }}>
-            {activeSlot ? `slot: ${activeSlot}` : "passe o mouse em uma campanha"}
-          </div>
-          <PageDiagram highlighted={activeSlot} />
-          <div style={{ marginTop: 10, fontSize: 11, color: "#888", textAlign: "center", fontFamily: "monospace" }}>
-            diagrama representativo · posições aproximadas
+        <div style={{ position: "sticky", top: 24 }}>
+          <div style={{ background: "white", border: `1px solid ${BORDER}`, borderRadius: 14, padding: "18px 20px" }}>
+            <div style={{ fontFamily: "var(--font-serif)", fontSize: 16, color: INK, marginBottom: 4 }}>Mapa de slots</div>
+            <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 14 }}>
+              {activeSlot ? `slot: ${activeSlot}` : "passe o mouse em uma campanha"}
+            </div>
+            <PageDiagram highlighted={activeSlot} />
+            <div style={{ marginTop: 10, fontSize: 11, color: MUTED, textAlign: "center", fontFamily: "var(--font-mono)" }}>
+              diagrama representativo · posições aproximadas
+            </div>
           </div>
         </div>
       </div>

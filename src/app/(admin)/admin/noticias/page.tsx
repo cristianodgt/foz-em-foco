@@ -1,12 +1,21 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import { Eye, Edit, Plus } from "lucide-react";
 
-const STATUS_COLORS: Record<string, string> = {
-  publicado: "bg-green-900/50 text-green-400",
-  rascunho: "bg-gray-800 text-white/40",
-  revisao: "bg-yellow-900/50 text-yellow-400",
-  agendado: "bg-blue-900/50 text-blue-400",
+const TEAL = "#0a7a6b";
+const INK = "#111";
+const MUTED = "#6b7280";
+const BORDER = "#e5e7eb";
+const BG = "#fafaf8";
+
+const catClass = (c: string) =>
+  c.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+const STATUS_STYLES: Record<string, { bg: string; fg: string; label: string }> = {
+  publicado: { bg: "#e6f9f3", fg: "#047857", label: "PUBLICADO" },
+  rascunho:  { bg: "#fef3c7", fg: "#92400e", label: "RASCUNHO" },
+  revisao:   { bg: "#e0f2fe", fg: "#075985", label: "REVISAO" },
+  agendado:  { bg: "#ede9fe", fg: "#5b21b6", label: "AGENDADO" },
+  arquivado: { bg: "#f3f4f6", fg: "#6b7280", label: "ARQUIVADO" },
 };
 
 interface Props {
@@ -19,7 +28,7 @@ export default async function NoticiasPage({ searchParams }: Props) {
   const PER_PAGE = 20;
 
   const where = status ? { status: status as any } : {};
-  const [articles, total] = await Promise.all([
+  const [articles, total, publicados, rascunhos, revisao] = await Promise.all([
     prisma.article.findMany({
       where,
       include: { category: true, author: { select: { name: true } } },
@@ -28,86 +37,199 @@ export default async function NoticiasPage({ searchParams }: Props) {
       take: PER_PAGE,
     }),
     prisma.article.count({ where }),
+    prisma.article.count({ where: { status: "publicado" as any } }),
+    prisma.article.count({ where: { status: "rascunho" as any } }),
+    prisma.article.count({ where: { status: "revisao" as any } }),
   ]);
 
   const totalPages = Math.ceil(total / PER_PAGE);
+  const filters: Array<{ key: string; label: string }> = [
+    { key: "", label: "Todos" },
+    { key: "publicado", label: "Publicados" },
+    { key: "rascunho", label: "Rascunhos" },
+    { key: "revisao", label: "Em revisão" },
+    { key: "agendado", label: "Agendados" },
+  ];
+
+  const totalGeral = await prisma.article.count();
+
+  const kpis = [
+    { label: "Total de artigos", value: totalGeral.toLocaleString("pt-BR"), color: TEAL },
+    { label: "Publicados", value: publicados.toLocaleString("pt-BR"), color: "#047857" },
+    { label: "Rascunhos", value: rascunhos.toLocaleString("pt-BR"), color: "#92400e" },
+    { label: "Em revisão", value: revisao.toLocaleString("pt-BR"), color: "#075985" },
+  ];
 
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-6">
+    <div style={{ background: BG, minHeight: "100vh", padding: "24px 28px" }}>
+      {/* Hero */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24, flexWrap: "wrap", gap: 16 }}>
         <div>
-          <h1 className="text-2xl font-bold text-white">Notícias</h1>
-          <p className="text-white/40 text-sm">{total} artigos</p>
+          <div style={{ fontFamily: "var(--font-serif)", fontSize: 32, color: INK, lineHeight: 1.1, marginBottom: 4 }}>
+            Notícias
+          </div>
+          <div style={{ fontSize: 13, color: MUTED, fontFamily: "var(--font-mono)" }}>
+            {total.toLocaleString("pt-BR")} artigos {status ? `· filtro: ${status}` : "· todos os status"}
+          </div>
         </div>
-        <Link href="/admin/noticias/novo" className="flex items-center gap-2 bg-teal text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-teal-dark transition-colors">
-          <Plus size={16} /> Nova notícia
-        </Link>
+        <div style={{ display: "flex", gap: 10 }}>
+          <Link href="/admin/noticias?status=rascunho" style={{
+            display: "flex", alignItems: "center", gap: 6, padding: "9px 14px",
+            border: `1px solid ${BORDER}`, borderRadius: 8, background: "white",
+            fontSize: 13, color: INK, textDecoration: "none", fontWeight: 500,
+          }}>
+            Ver rascunhos
+          </Link>
+          <Link href="/admin/noticias/novo" style={{
+            display: "flex", alignItems: "center", gap: 6, padding: "9px 16px",
+            background: TEAL, borderRadius: 8, fontSize: 13, color: "white",
+            textDecoration: "none", fontWeight: 600,
+          }}>
+            + Nova notícia
+          </Link>
+        </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex gap-2 mb-6">
-        {["", "publicado", "rascunho", "revisao", "agendado"].map((s) => (
-          <Link
-            key={s}
-            href={s ? `?status=${s}` : "/admin/noticias"}
-            className={`px-3 py-1.5 rounded text-xs font-mono border transition-colors ${status === s || (!status && !s) ? "bg-teal text-white border-teal" : "border-white/10 text-white/40 hover:border-white/30 hover:text-white/70"}`}
-          >
-            {s || "Todos"}
-          </Link>
+      {/* KPI Row */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, marginBottom: 24 }}>
+        {kpis.map((k, i) => (
+          <div key={i} style={{
+            background: "white", border: `1px solid ${BORDER}`, borderRadius: 14,
+            padding: "18px 20px", position: "relative", overflow: "hidden",
+          }}>
+            <div style={{ position: "absolute", top: 0, left: 0, width: 3, height: "100%", background: k.color }} />
+            <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", color: MUTED, textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600, marginBottom: 10 }}>{k.label}</div>
+            <div style={{ fontFamily: "var(--font-serif)", fontSize: 30, lineHeight: 1, color: INK }}>{k.value}</div>
+          </div>
         ))}
       </div>
 
-      <div className="bg-gray-900 border border-white/5 rounded-xl overflow-hidden">
-        <table className="w-full">
+      {/* Toolbar / filtros */}
+      <div style={{
+        background: "white", border: `1px solid ${BORDER}`, borderRadius: 10,
+        padding: "12px 16px", display: "flex", gap: 10, alignItems: "center",
+        marginBottom: 16, flexWrap: "wrap",
+      }}>
+        <input
+          placeholder="Buscar por título ou slug..."
+          style={{
+            flex: 1, minWidth: 220, padding: "9px 12px", fontSize: 13,
+            border: `1px solid ${BORDER}`, borderRadius: 8, outline: "none",
+            background: BG, color: INK,
+          }}
+        />
+        <div style={{ display: "flex", gap: 6 }}>
+          {filters.map((f) => {
+            const active = (f.key === "" && !status) || status === f.key;
+            return (
+              <Link
+                key={f.key || "all"}
+                href={f.key ? `?status=${f.key}` : "/admin/noticias"}
+                style={{
+                  padding: "7px 12px", fontSize: 12, fontFamily: "var(--font-mono)",
+                  fontWeight: 600, borderRadius: 6, textDecoration: "none",
+                  border: `1px solid ${active ? TEAL : BORDER}`,
+                  background: active ? TEAL : "white",
+                  color: active ? "white" : MUTED,
+                }}
+              >
+                {f.label}
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Tabela */}
+      <div style={{ background: "white", border: `1px solid ${BORDER}`, borderRadius: 14, overflow: "hidden", marginBottom: 20 }}>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
-            <tr className="border-b border-white/5 text-xs font-mono text-white/30 uppercase">
-              <th className="text-left px-4 py-3">Título</th>
-              <th className="text-left px-4 py-3 hidden md:table-cell">Categoria</th>
-              <th className="text-left px-4 py-3 hidden lg:table-cell">Autor</th>
-              <th className="text-left px-4 py-3">Status</th>
-              <th className="text-right px-4 py-3 hidden sm:table-cell">Views</th>
-              <th className="px-4 py-3" />
+            <tr style={{ background: BG }}>
+              {["Título", "Categoria", "Autor", "Status", "Views", ""].map((h, i) => (
+                <th key={i} style={{
+                  padding: "10px 14px", fontSize: 11, fontFamily: "var(--font-mono)",
+                  color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em",
+                  textAlign: i === 4 ? "right" : "left", fontWeight: 600,
+                }}>
+                  {h}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
-            {articles.map((a) => (
-              <tr key={a.id} className="border-b border-white/5 hover:bg-white/2 transition-colors">
-                <td className="px-4 py-3">
-                  <p className="text-sm text-white/80 line-clamp-1">{a.title}</p>
-                  <p className="text-xs text-white/30 font-mono mt-0.5">/{a.slug}</p>
-                </td>
-                <td className="px-4 py-3 hidden md:table-cell">
-                  <span className="text-xs text-white/50 font-mono">{a.category.name}</span>
-                </td>
-                <td className="px-4 py-3 hidden lg:table-cell">
-                  <span className="text-xs text-white/50">{a.author.name}</span>
-                </td>
-                <td className="px-4 py-3">
-                  <span className={`text-xs px-2 py-0.5 rounded font-mono ${STATUS_COLORS[a.status]}`}>{a.status}</span>
-                </td>
-                <td className="px-4 py-3 hidden sm:table-cell text-right">
-                  <span className="text-xs text-white/30 font-mono flex items-center gap-1 justify-end">
-                    <Eye size={10} />{a.views.toLocaleString()}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <Link href={`/admin/noticias/${a.id}`} className="text-white/30 hover:text-teal transition-colors">
-                    <Edit size={14} />
-                  </Link>
+            {articles.map((a, i) => {
+              const st = STATUS_STYLES[a.status] ?? { bg: "#f3f4f6", fg: MUTED, label: a.status.toUpperCase() };
+              return (
+                <tr key={a.id} style={{ borderTop: i > 0 ? `1px solid ${BORDER}` : "none" }}>
+                  <td style={{ padding: "14px", fontSize: 13, color: INK, maxWidth: 420 }}>
+                    <div style={{ fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {a.title}
+                    </div>
+                    <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", color: MUTED, marginTop: 2 }}>
+                      /{a.slug}
+                    </div>
+                  </td>
+                  <td style={{ padding: "14px" }}>
+                    <span className={`cat-tag ${catClass(a.category.name)}`}>{a.category.name}</span>
+                  </td>
+                  <td style={{ padding: "14px", fontSize: 13, color: INK }}>{a.author.name}</td>
+                  <td style={{ padding: "14px" }}>
+                    <span style={{
+                      fontSize: 11, fontFamily: "var(--font-mono)", fontWeight: 700,
+                      padding: "3px 8px", borderRadius: 99,
+                      background: st.bg, color: st.fg,
+                    }}>
+                      {st.label}
+                    </span>
+                  </td>
+                  <td style={{ padding: "14px", fontFamily: "var(--font-mono)", fontSize: 13, color: TEAL, fontWeight: 700, textAlign: "right" }}>
+                    {a.views.toLocaleString("pt-BR")}
+                  </td>
+                  <td style={{ padding: "14px", textAlign: "right" }}>
+                    <Link href={`/admin/noticias/${a.id}`} style={{
+                      padding: "6px 12px", background: "white", color: INK,
+                      border: `1px solid ${BORDER}`, borderRadius: 6,
+                      fontSize: 12, fontWeight: 500, textDecoration: "none",
+                    }}>
+                      Editar
+                    </Link>
+                  </td>
+                </tr>
+              );
+            })}
+            {articles.length === 0 && (
+              <tr>
+                <td colSpan={6} style={{ padding: "48px 14px", textAlign: "center", color: MUTED, fontSize: 13 }}>
+                  Nenhum artigo encontrado com este filtro.
                 </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>
 
+      {/* Paginação */}
       {totalPages > 1 && (
-        <div className="flex justify-center gap-2 mt-6">
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-            <a key={p} href={`?${status ? `status=${status}&` : ""}page=${p}`}
-              className={`w-8 h-8 flex items-center justify-center rounded text-xs font-mono border transition-colors ${p === page ? "bg-teal text-white border-teal" : "border-white/10 text-white/40 hover:border-white/30"}`}
-            >{p}</a>
-          ))}
+        <div style={{ display: "flex", justifyContent: "center", gap: 6 }}>
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => {
+            const active = p === page;
+            return (
+              <a
+                key={p}
+                href={`?${status ? `status=${status}&` : ""}page=${p}`}
+                style={{
+                  width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center",
+                  borderRadius: 8, fontSize: 12, fontFamily: "var(--font-mono)", fontWeight: 600,
+                  border: `1px solid ${active ? TEAL : BORDER}`,
+                  background: active ? TEAL : "white",
+                  color: active ? "white" : MUTED,
+                  textDecoration: "none",
+                }}
+              >
+                {p}
+              </a>
+            );
+          })}
         </div>
       )}
     </div>
