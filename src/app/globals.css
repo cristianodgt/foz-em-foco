@@ -249,3 +249,57 @@ button { cursor: pointer; font-family: var(--font-sans); border: none; }
 
 /* ── Category sub-nav ── */
 .category-subnav::-webkit-scrollbar { display: none; }
+
+/* ── Mobile responsive utilities ── */
+
+/* Inputs: 16px minimum on mobile to avoid iOS zoom */
+@media (max-width: 1023px) {
+  .input,
+  input[type="text"],
+  input[type="email"],
+  input[type="search"],
+  input[type="password"],
+  textarea,
+  select {
+    font-size: 16px;
+  }
+
+  /* Clickable min 44px */
+  .btn { min-height: 44px; }
+  .btn-sm { min-height: 40px; }
+
+  /* Typography scale — mobile */
+  .t-display { font-size: clamp(24px, 8vw, 34px); }
+  .t-h1      { font-size: clamp(24px, 7vw, 30px); }
+  .t-h2      { font-size: clamp(20px, 6vw, 26px); }
+  .t-h3      { font-size: clamp(18px, 5vw, 22px); }
+
+  body { font-size: 15px; }
+}
+
+/* Horizontal scroll (dashboard on mobile) */
+.scroll-x {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 4px;
+}
+.scroll-x::-webkit-scrollbar { display: none; }
+.scroll-x > * { scroll-snap-align: start; flex-shrink: 0; }
+
+/* Feed on mobile: force 1 column */
+@media (max-width: 767px) {
+  .feed-grid,
+  .grid-cards-3,
+  .grid-cards-2 {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Safe-area aware body bottom */
+@supports (padding: env(safe-area-inset-bottom)) {
+  body { padding-bottom: env(safe-area-inset-bottom); }
+}

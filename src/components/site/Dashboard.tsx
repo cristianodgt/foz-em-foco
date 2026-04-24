@@ -63,7 +63,25 @@ export default function Dashboard() {
 
       <style>{`
         @media (max-width: 1024px) { .dashboard-grid { grid-template-columns: repeat(3,1fr) !important; } }
-        @media (max-width: 640px)  { .dashboard-grid { grid-template-columns: repeat(2,1fr) !important; } }
+        @media (max-width: 767px)  {
+          .dashboard-grid {
+            display: flex !important;
+            grid-template-columns: none !important;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            padding: 4px 4px 8px;
+            margin: 0 -20px;
+            padding-left: 20px;
+            padding-right: 20px;
+          }
+          .dashboard-grid::-webkit-scrollbar { display: none; }
+          .dashboard-grid > div {
+            flex: 0 0 160px;
+            scroll-snap-align: start;
+          }
+        }
       `}</style>
     </section>
   );
