@@ -3,32 +3,11 @@ import { useEffect, useState } from "react";
 
 const AD_INVENTORY = [
   {
-    tag: "GASTRONOMIA · RAFAIN",
+    tag: "RAFAIN",
     label: "30% off — jantar fondue só hoje",
     cta: "Reservar",
     color: "#b84c00",
     gradient: "linear-gradient(135deg,#b84c00,#d35400)",
-  },
-  {
-    tag: "FINANCEIRO · SICREDI",
-    label: "Crédito empresarial com taxa reduzida",
-    cta: "Simular",
-    color: "#0a7a6b",
-    gradient: "linear-gradient(135deg,#065a4f,#0a7a6b)",
-  },
-  {
-    tag: "TURISMO · ITAIPU",
-    label: "Tour Iluminação com 20% de desconto",
-    cta: "Comprar",
-    color: "#2874a6",
-    gradient: "linear-gradient(135deg,#1a5276,#2874a6)",
-  },
-  {
-    tag: "COMPRAS · SHOPPING JL",
-    label: "Liquidação de outono — até 50% off",
-    cta: "Ver lojas",
-    color: "#6d3480",
-    gradient: "linear-gradient(135deg,#4a235a,#6d3480)",
   },
 ];
 
@@ -51,13 +30,18 @@ export default function MobileStickyAd() {
   }, []);
 
   useEffect(() => {
-    if (closed) return;
-    const i = setInterval(() => setIdx((n) => (n + 1) % AD_INVENTORY.length), 6000);
+    if (closed || AD_INVENTORY.length <= 1) return;
+    const i = setInterval(
+      () => setIdx((n) => (n + 1) % AD_INVENTORY.length),
+      6000
+    );
     return () => clearInterval(i);
   }, [closed]);
 
   function dismiss() {
-    try { localStorage.setItem(DISMISS_KEY, String(Date.now())); } catch {}
+    try {
+      localStorage.setItem(DISMISS_KEY, String(Date.now()));
+    } catch {}
     setClosed(true);
   }
 
@@ -86,11 +70,10 @@ export default function MobileStickyAd() {
           margin: "0 12px",
           width: "100%",
           maxWidth: 640,
-          height: 56,
-          background: ad.gradient,
+          background: "linear-gradient(135deg,#b84c00,#d35400)",
           color: "white",
           borderRadius: 8,
-          padding: "8px 12px",
+          padding: "10px 14px",
           display: "flex",
           alignItems: "center",
           gap: 10,
@@ -98,7 +81,14 @@ export default function MobileStickyAd() {
         }}
       >
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, opacity: 0.7, letterSpacing: "0.08em" }}>
+          <div
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 8,
+              opacity: 0.7,
+              letterSpacing: "0.08em",
+            }}
+          >
             PUBLICIDADE · {ad.tag}
           </div>
           <div
@@ -124,7 +114,6 @@ export default function MobileStickyAd() {
             fontWeight: 700,
             cursor: "pointer",
             flexShrink: 0,
-            minHeight: 32,
           }}
         >
           {ad.cta}
@@ -135,8 +124,8 @@ export default function MobileStickyAd() {
           style={{
             background: "rgba(255,255,255,0.2)",
             border: "none",
-            width: 24,
-            height: 24,
+            width: 22,
+            height: 22,
             borderRadius: "50%",
             color: "white",
             cursor: "pointer",

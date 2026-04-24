@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { RotatingAd } from '@/components/site/RotatingAd'
+import MobileGuiaLayout from '@/components/mobile/MobileGuiaLayout'
 
 const CATEGORIAS = [
   { nome:'Restaurantes', count:312 },
@@ -98,7 +99,11 @@ export default function GuiaPage() {
   ]
 
   return (
-    <div>
+    <>
+    <div className="md:hidden">
+      <MobileGuiaLayout />
+    </div>
+    <div className="hidden md:block">
       <div style={{ background:'#111', padding:'32px 0' }}>
         <div style={{ maxWidth:1280, margin:'0 auto', padding:'0 32px' }}>
           <h1 style={{ fontFamily:'DM Serif Display, Georgia, serif', fontSize:'clamp(28px,4vw,44px)', color:'white', marginBottom:6 }}>Guia de Foz & Região</h1>
@@ -193,5 +198,6 @@ export default function GuiaPage() {
         </div>
       </div>
     </div>
+    </>
   )
 }

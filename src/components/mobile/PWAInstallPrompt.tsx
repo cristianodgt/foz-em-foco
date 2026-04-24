@@ -10,15 +10,19 @@ const VISITS_KEY = "fef-visits";
 const DISMISS_KEY = "fef-pwa-dismissed-at";
 const DISMISS_DAYS = 7;
 
+const teal = "#0a7a6b";
+const tealPale = "#e6f4f2";
+const muted = "#888";
+
 export default function PWAInstallPrompt() {
   const [deferred, setDeferred] = useState<BIPEvent | null>(null);
   const [show, setShow] = useState(false);
 
   useEffect(() => {
-    // Increment visits once per session
     try {
       if (!sessionStorage.getItem("fef-visit-counted")) {
-        const v = parseInt(localStorage.getItem(VISITS_KEY) || "0", 10) + 1;
+        const v =
+          parseInt(localStorage.getItem(VISITS_KEY) || "0", 10) + 1;
         localStorage.setItem(VISITS_KEY, String(v));
         sessionStorage.setItem("fef-visit-counted", "1");
       }
@@ -30,10 +34,17 @@ export default function PWAInstallPrompt() {
       setDeferred(bip);
 
       try {
-        const visits = parseInt(localStorage.getItem(VISITS_KEY) || "0", 10);
-        const dismissedAt = parseInt(localStorage.getItem(DISMISS_KEY) || "0", 10);
+        const visits = parseInt(
+          localStorage.getItem(VISITS_KEY) || "0",
+          10
+        );
+        const dismissedAt = parseInt(
+          localStorage.getItem(DISMISS_KEY) || "0",
+          10
+        );
         const dismissValid =
-          dismissedAt && Date.now() - dismissedAt < DISMISS_DAYS * 24 * 60 * 60 * 1000;
+          dismissedAt &&
+          Date.now() - dismissedAt < DISMISS_DAYS * 24 * 60 * 60 * 1000;
         if (visits >= 3 && !dismissValid) setShow(true);
       } catch {
         setShow(true);
@@ -41,9 +52,7 @@ export default function PWAInstallPrompt() {
     };
 
     const manualHandler = () => {
-      if (deferred) {
-        setShow(true);
-      }
+      setShow(true);
     };
 
     window.addEventListener("beforeinstallprompt", handler);
@@ -53,20 +62,23 @@ export default function PWAInstallPrompt() {
       window.removeEventListener("beforeinstallprompt", handler);
       window.removeEventListener("pwa-install-request", manualHandler);
     };
-  }, [deferred]);
+  }, []);
 
   async function install() {
-    if (!deferred) return;
-    try {
-      await deferred.prompt();
-      await deferred.userChoice;
-    } catch {}
-    setDeferred(null);
+    if (deferred) {
+      try {
+        await deferred.prompt();
+        await deferred.userChoice;
+      } catch {}
+      setDeferred(null);
+    }
     setShow(false);
   }
 
   function dismiss() {
-    try { localStorage.setItem(DISMISS_KEY, String(Date.now())); } catch {}
+    try {
+      localStorage.setItem(DISMISS_KEY, String(Date.now()));
+    } catch {}
     setShow(false);
   }
 
@@ -96,14 +108,32 @@ export default function PWAInstallPrompt() {
           boxShadow: "0 -4px 20px rgba(0,0,0,0.1)",
         }}
       >
-        <div style={{ width: 40, height: 4, background: "#e2e8f0", borderRadius: 2, margin: "0 auto 16px" }} />
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+        {/* Handle bar */}
+        <div
+          style={{
+            width: 36,
+            height: 4,
+            borderRadius: 2,
+            background: "#ddd",
+            margin: "0 auto 16px",
+          }}
+        />
+
+        {/* Icon + title */}
+        <div
+          style={{
+            display: "flex",
+            gap: 14,
+            alignItems: "center",
+            marginBottom: 16,
+          }}
+        >
           <div
             style={{
-              width: 56,
-              height: 56,
+              width: 64,
+              height: 64,
               borderRadius: 14,
-              background: "#0a7a6b",
+              background: teal,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -111,42 +141,124 @@ export default function PWAInstallPrompt() {
             }}
           >
             <svg width="36" height="36" viewBox="0 0 32 32">
-              <circle cx="16" cy="16" r="13" fill="none" stroke="white" strokeWidth="2" opacity="0.4" />
-              <circle cx="16" cy="16" r="8" fill="none" stroke="white" strokeWidth="2" opacity="0.7" />
+              <circle
+                cx="16"
+                cy="16"
+                r="14"
+                fill="none"
+                stroke="white"
+                strokeWidth="2"
+              />
+              <circle
+                cx="16"
+                cy="16"
+                r="8"
+                fill="none"
+                stroke="white"
+                strokeWidth="2"
+              />
               <circle cx="16" cy="16" r="3" fill="white" />
             </svg>
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: "var(--font-serif)", fontSize: 20, color: "#111" }}>Foz em Foco</div>
-            <div style={{ fontSize: 12, color: "#888" }}>fozemfoco.com.br</div>
+            <div
+              style={{
+                fontFamily: "var(--font-serif)",
+                fontSize: 22,
+                lineHeight: 1.1,
+                marginBottom: 4,
+              }}
+            >
+              Foz em Foco
+            </div>
+            <div style={{ fontSize: 12, color: muted }}>
+              fozemfoco.com.br
+            </div>
           </div>
         </div>
 
-        <ul style={{ listStyle: "none", padding: 0, margin: "12px 0 18px" }}>
-          {["Funciona offline", "Ícone no celular", "Leve e rápido"].map((b) => (
-            <li key={b} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 0", fontSize: 14, color: "#333" }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0a7a6b" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M5 12l5 5L20 7" />
-              </svg>
-              {b}
-            </li>
+        <div
+          style={{
+            fontSize: 14,
+            color: "#333",
+            lineHeight: 1.5,
+            marginBottom: 16,
+          }}
+        >
+          Adicione Foz em Foco na tela inicial para acesso rápido às notícias,
+          câmbio e status das pontes.
+        </div>
+
+        {/* Benefits */}
+        <div style={{ marginBottom: 20 }}>
+          {(
+            [
+              ["Funciona offline", "Últimas notícias mesmo sem internet"],
+              ["Ícone no celular", "Abre como app, sem barra de endereço"],
+              ["Leve e rápido", "Apenas 200KB — instala em 1 segundo"],
+            ] as [string, string][]
+          ).map(([t, d]) => (
+            <div
+              key={t}
+              style={{
+                display: "flex",
+                gap: 10,
+                marginBottom: 10,
+              }}
+            >
+              <div
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: "50%",
+                  background: tealPale,
+                  color: teal,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                >
+                  <path d="M20 6 9 17l-5-5" />
+                </svg>
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 600 }}>{t}</div>
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: muted,
+                    marginTop: 1,
+                  }}
+                >
+                  {d}
+                </div>
+              </div>
+            </div>
           ))}
-        </ul>
+        </div>
 
         <button
           onClick={install}
           style={{
             width: "100%",
-            background: "#0a7a6b",
+            padding: 14,
+            background: teal,
             color: "white",
             border: "none",
-            padding: "14px 16px",
             borderRadius: 10,
             fontSize: 15,
             fontWeight: 700,
-            cursor: "pointer",
             marginBottom: 8,
-            minHeight: 48,
+            cursor: "pointer",
           }}
         >
           Adicionar à tela inicial
@@ -155,14 +267,12 @@ export default function PWAInstallPrompt() {
           onClick={dismiss}
           style={{
             width: "100%",
+            padding: 10,
             background: "transparent",
-            color: "#555",
+            color: muted,
             border: "none",
-            padding: "12px 16px",
-            fontSize: 14,
-            fontWeight: 500,
+            fontSize: 13,
             cursor: "pointer",
-            minHeight: 44,
           }}
         >
           Agora não

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import MobileAgendaLayout from "@/components/mobile/MobileAgendaLayout";
 
 const FILTERS = ["Tudo","Cultura","Gastronomia","Esporte","Negócios","Infantil","Paraguai","Grátis","Pago"];
 
@@ -58,6 +59,13 @@ export default function AgendaPage() {
 
   return (
     <>
+      {/* Mobile */}
+      <div className="md:hidden">
+        <MobileAgendaLayout />
+      </div>
+
+      {/* Desktop */}
+      <div className="hidden md:block">
       {/* Hero */}
       <div style={{ background: "#111", padding: "32px 0 0" }}>
         <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 32px" }}>
@@ -221,6 +229,7 @@ export default function AgendaPage() {
             </div>
           </aside>
         </div>
+      </div>
       </div>
     </>
   );

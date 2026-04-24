@@ -8,6 +8,7 @@ import Dashboard from "@/components/site/Dashboard";
 import NewsletterCTA from "@/components/site/NewsletterCTA";
 import SidebarMostRead from "@/components/site/SidebarMostRead";
 import SidebarLatest from "@/components/site/SidebarLatest";
+import MobileHomeLayout from "@/components/mobile/MobileHomeLayout";
 
 export const dynamic = "force-dynamic";
 
@@ -126,6 +127,13 @@ export default async function HomePage() {
 
   return (
     <>
+      {/* Mobile */}
+      <div className="md:hidden">
+        <MobileHomeLayout />
+      </div>
+
+      {/* Desktop */}
+      <div className="hidden md:block">
       <Dashboard />
 
       {/* ── Hero ── */}
@@ -364,6 +372,7 @@ export default async function HomePage() {
           .cards-3 { grid-template-columns: 1fr !important; }
         }
       `}</style>
+      </div>
     </>
   );
 }

@@ -7,6 +7,7 @@ import Link from "next/link";
 import NewsletterCTA from "@/components/site/NewsletterCTA";
 import SidebarMostRead from "@/components/site/SidebarMostRead";
 import SidebarLatest from "@/components/site/SidebarLatest";
+import MobileArticleLayout from "@/components/mobile/MobileArticleLayout";
 
 interface Props {
   params: Promise<{ categoria: string; slug: string }>;
@@ -99,10 +100,32 @@ export default async function ArticlePage({ params }: Props) {
     ? buildArticleJsonLd({ title: article.title, description: article.lead ?? "", image: article.imageUrl ?? "", publishedAt: article.publishedAt, updatedAt: article.updatedAt, authorName: article.author.name ?? "Redação", path: `/${categoria}/${slug}` })
     : null;
 
+  const publishedLabel = article.publishedAt ? formatDate(article.publishedAt) : null;
+
   return (
     <>
       {jsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />}
 
+      {/* Mobile */}
+      <div className="md:hidden">
+        <MobileArticleLayout
+          category={{ name: article.category.name, slug: article.category.slug }}
+          title={article.title}
+          lead={article.lead}
+          imageUrl={article.imageUrl}
+          authorName={article.author.name}
+          authorInitial={(article.author.name ?? "R")[0]}
+          publishedLabel={publishedLabel}
+          readTime={article.readTime}
+          views={article.views}
+          bodyHtml={article.body}
+          tags={article.tags.map((t) => ({ id: t.id, name: t.name }))}
+          related={related.map((r) => ({ id: r.id, title: r.title }))}
+        />
+      </div>
+
+      {/* Desktop */}
+      <div className="hidden md:block">
       <div className="container" style={{ padding: "24px 20px" }}>
         {/* Leaderboard ad */}
         <div style={{ background: "var(--ad-bg)", border: "1px dashed var(--ad-border)", borderRadius: "var(--r-m)", height: 80, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 28 }}>
@@ -239,6 +262,7 @@ export default async function ArticlePage({ params }: Props) {
             </div>
           </aside>
         </div>
+      </div>
       </div>
     </>
   );
