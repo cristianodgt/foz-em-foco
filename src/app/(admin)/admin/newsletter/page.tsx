@@ -1,4 +1,6 @@
-import { prisma } from "@/lib/prisma";
+"use client";
+
+import React, { useCallback, useEffect, useState } from "react";
 
 const TEAL = "#0a7a6b";
 const INK = "#111";
@@ -6,163 +8,144 @@ const MUTED = "#6b7280";
 const BORDER = "#e5e7eb";
 const BG = "#fafaf8";
 
-export default async function NewsletterPage() {
-  const [subscribers, editions, total, sentEditions] = await Promise.all([
-    prisma.newsletterSubscriber.findMany({ where: { active: true }, orderBy: { createdAt: "desc" }, take: 20 }),
-    prisma.newsletterEdition.findMany({ orderBy: { createdAt: "desc" }, take: 10 }),
-    prisma.newsletterSubscriber.count({ where: { active: true } }),
-    prisma.newsletterEdition.count({ where: { sentAt: { not: null } } }),
-  ]);
+type Sub = { id: string; email: string; name: string | null; active: boolean; createdAt: string };
+type Edition = { id: string; subject: string; body: string; sentAt: string | null; sentCount: number; createdAt: string };
 
-  const lastEdition = editions.find((e) => e.sentAt);
-  const avgSent = lastEdition?.sentCount ?? 0;
+export default function NewsletterPage() {
+  const [subs, setSubs] = useState<Sub[]>([]);
+  const [totalSubs, setTotalSubs] = useState(0);
+  const [activeSubs, setActiveSubs] = useState(0);
+  const [editions, setEditions] = useState<Edition[]>([]);
+  const [tab, setTab] = useState<"subs" | "editions">("editions");
 
-  const kpis = [
-    { label: "Inscritos ativos", value: total.toLocaleString("pt-BR"), color: TEAL },
-    { label: "Edições enviadas", value: sentEditions.toString(), color: "#047857" },
-    { label: "Último envio", value: avgSent.toLocaleString("pt-BR"), color: "#065a4f" },
-    { label: "Taxa abertura", value: "34", suffix: "%", color: "#d35400" },
-  ];
+  const [subject, setSubject] = useState("");
+  const [bodyText, setBodyText] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const load = useCallback(async () => {
+    const [sRes, eRes] = await Promise.all([fetch("/api/admin/newsletter/subscribers"), fetch("/api/admin/newsletter/editions")]);
+    const s = await sRes.json(); const e = await eRes.json();
+    setSubs(s.items ?? []); setTotalSubs(s.total ?? 0); setActiveSubs(s.active ?? 0);
+    setEditions(e.items ?? []);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function createEdition() {
+    if (!subject.trim()) { alert("Assunto obrigatório"); return; }
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/newsletter/editions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ subject, body: bodyText }) });
+      if (!res.ok) { alert("Falha ao criar"); return; }
+      setSubject(""); setBodyText("");
+      await load();
+    } finally { setSaving(false); }
+  }
+  async function sendEdition(id: string) {
+    if (!confirm("Marcar como enviada? (envio real via Brevo ainda não implementado)")) return;
+    await fetch(`/api/admin/newsletter/editions/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ send: true }) });
+    await load();
+  }
+  async function deleteEdition(id: string) {
+    if (!confirm("Excluir edição?")) return;
+    await fetch(`/api/admin/newsletter/editions/${id}`, { method: "DELETE" });
+    await load();
+  }
+  async function deleteSub(id: string) {
+    if (!confirm("Remover inscrito?")) return;
+    await fetch(`/api/admin/newsletter/subscribers?id=${id}`, { method: "DELETE" });
+    await load();
+  }
 
   return (
     <div style={{ background: BG, minHeight: "100vh", padding: "24px 28px" }}>
-      {/* Hero */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24, flexWrap: "wrap", gap: 16 }}>
-        <div>
-          <div style={{ fontFamily: "var(--font-serif)", fontSize: 32, color: INK, lineHeight: 1.1, marginBottom: 4 }}>
-            Newsletter
-          </div>
-          <div style={{ fontSize: 13, color: MUTED, fontFamily: "var(--font-mono)" }}>
-            {total.toLocaleString("pt-BR")} inscritos ativos · integração Brevo
-          </div>
-        </div>
-        <div style={{ display: "flex", gap: 10 }}>
-          <button style={{
-            padding: "9px 14px", border: `1px solid ${BORDER}`, borderRadius: 8,
-            background: "white", fontSize: 13, color: INK, fontWeight: 500, cursor: "pointer",
-          }}>
-            Exportar lista
-          </button>
-          <button style={{
-            padding: "9px 16px", background: TEAL, borderRadius: 8,
-            fontSize: 13, color: "white", fontWeight: 600, border: "none", cursor: "pointer",
-          }}>
-            + Nova edição
-          </button>
-        </div>
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ fontFamily: "var(--font-serif)", fontSize: 32, color: INK, lineHeight: 1.1, marginBottom: 4 }}>Newsletter</div>
+        <div style={{ fontSize: 13, color: MUTED, fontFamily: "var(--font-mono)" }}>{totalSubs} inscritos · {activeSubs} ativos · {editions.length} edições</div>
       </div>
 
-      {/* KPI */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, marginBottom: 24 }}>
-        {kpis.map((k, i) => (
-          <div key={i} style={{
-            background: "white", border: `1px solid ${BORDER}`, borderRadius: 14,
-            padding: "18px 20px", position: "relative", overflow: "hidden",
-          }}>
-            <div style={{ position: "absolute", top: 0, left: 0, width: 3, height: "100%", background: k.color }} />
-            <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", color: MUTED, textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600, marginBottom: 10 }}>{k.label}</div>
-            <div style={{ fontFamily: "var(--font-serif)", fontSize: 30, lineHeight: 1, color: INK }}>
-              {k.value}
-              {k.suffix && <span style={{ fontSize: 14, color: MUTED, marginLeft: 3 }}>{k.suffix}</span>}
-            </div>
-          </div>
+      <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
+        {([["editions", "Edições"], ["subs", "Inscritos"]] as const).map(([k, l]) => (
+          <button key={k} onClick={() => setTab(k as any)}
+            style={{ padding: "8px 14px", border: `1px solid ${BORDER}`, borderRadius: 8, background: tab === k ? TEAL : "white", color: tab === k ? "white" : INK, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+            {l}
+          </button>
         ))}
       </div>
 
-      {/* Dois cards lado a lado */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1.2fr", gap: 20 }}>
-        {/* Inscritos */}
-        <div style={{ background: "white", border: `1px solid ${BORDER}`, borderRadius: 14, overflow: "hidden" }}>
-          <div style={{ padding: "16px 22px", borderBottom: `1px solid ${BORDER}`, fontFamily: "var(--font-serif)", fontSize: 16, color: INK }}>
-            Inscritos recentes
-          </div>
-          {subscribers.length === 0 ? (
-            <div style={{ padding: "32px", textAlign: "center", color: MUTED, fontSize: 13 }}>
-              Nenhum inscrito ainda.
-            </div>
-          ) : (
-            subscribers.map((s, i) => (
-              <div key={s.id} style={{
-                padding: "12px 22px",
-                borderBottom: i < subscribers.length - 1 ? `1px solid ${BORDER}` : "none",
-                display: "flex", alignItems: "center", gap: 12,
-              }}>
-                <div style={{
-                  width: 28, height: 28, borderRadius: "50%",
-                  background: "#e6f9f3", color: TEAL,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700,
-                  flexShrink: 0,
-                }}>
-                  {s.email[0].toUpperCase()}
-                </div>
-                <div style={{ flex: 1, minWidth: 0, fontSize: 13, color: INK, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {s.email}
-                </div>
-                <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", color: MUTED }}>
-                  {new Date(s.createdAt).toLocaleDateString("pt-BR")}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-
-        {/* Edições */}
-        <div style={{ background: "white", border: `1px solid ${BORDER}`, borderRadius: 14, overflow: "hidden" }}>
-          <div style={{ padding: "16px 22px", borderBottom: `1px solid ${BORDER}`, fontFamily: "var(--font-serif)", fontSize: 16, color: INK }}>
-            Edições
-          </div>
-          {editions.length === 0 ? (
-            <div style={{ padding: "32px", textAlign: "center", color: MUTED, fontSize: 13 }}>
-              Nenhuma edição enviada.
-            </div>
-          ) : (
+      {tab === "editions" ? (
+        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: 20 }}>
+          <div style={{ background: "white", border: `1px solid ${BORDER}`, borderRadius: 14, overflow: "hidden" }}>
+            <div style={{ padding: "16px 22px", borderBottom: `1px solid ${BORDER}`, fontFamily: "var(--font-serif)", fontSize: 16, color: INK }}>Edições</div>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead>
-                <tr style={{ background: BG }}>
-                  {["Assunto", "Envio", "Destinatários", "Status"].map((h, i) => (
-                    <th key={i} style={{
-                      padding: "10px 14px", fontSize: 11, fontFamily: "var(--font-mono)",
-                      color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em",
-                      textAlign: "left", fontWeight: 600,
-                    }}>
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
+              <thead><tr style={{ background: BG }}>{["Assunto", "Enviada", "Inscritos", ""].map((h, i) => <th key={i} style={th}>{h}</th>)}</tr></thead>
               <tbody>
-                {editions.map((e, i) => {
-                  const sent = !!e.sentAt;
-                  return (
-                    <tr key={e.id} style={{ borderTop: i > 0 ? `1px solid ${BORDER}` : "none" }}>
-                      <td style={{ padding: "12px 14px", fontSize: 13, color: INK, fontWeight: 500, maxWidth: 260, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {e.subject}
-                      </td>
-                      <td style={{ padding: "12px 14px", fontFamily: "var(--font-mono)", fontSize: 12, color: MUTED }}>
-                        {sent ? new Date(e.sentAt!).toLocaleDateString("pt-BR") : "—"}
-                      </td>
-                      <td style={{ padding: "12px 14px", fontFamily: "var(--font-mono)", fontSize: 13, color: sent ? TEAL : MUTED, fontWeight: sent ? 700 : 400 }}>
-                        {sent ? e.sentCount.toLocaleString("pt-BR") : "—"}
-                      </td>
-                      <td style={{ padding: "12px 14px" }}>
-                        <span style={{
-                          fontSize: 11, fontFamily: "var(--font-mono)", fontWeight: 700,
-                          padding: "3px 8px", borderRadius: 99,
-                          background: sent ? "#e6f9f3" : "#fef3c7",
-                          color: sent ? "#047857" : "#92400e",
-                        }}>
-                          {sent ? "ENVIADA" : "RASCUNHO"}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
+                {editions.map((e, i) => (
+                  <tr key={e.id} style={{ borderTop: i > 0 ? `1px solid ${BORDER}` : "none" }}>
+                    <td style={{ padding: "14px", fontSize: 13, color: INK, fontWeight: 500 }}>{e.subject}</td>
+                    <td style={{ padding: "14px", fontFamily: "var(--font-mono)", fontSize: 12, color: MUTED }}>
+                      {e.sentAt ? new Date(e.sentAt).toLocaleString("pt-BR") : "—"}
+                    </td>
+                    <td style={{ padding: "14px", fontFamily: "var(--font-mono)", fontSize: 13, color: TEAL, fontWeight: 700 }}>{e.sentCount}</td>
+                    <td style={{ padding: "14px", textAlign: "right", whiteSpace: "nowrap" }}>
+                      {!e.sentAt && <button onClick={() => sendEdition(e.id)} style={{ ...btn, color: TEAL, borderColor: TEAL, marginRight: 6 }}>Enviar</button>}
+                      <button onClick={() => deleteEdition(e.id)} style={btnDanger}>Excluir</button>
+                    </td>
+                  </tr>
+                ))}
+                {editions.length === 0 && <tr><td colSpan={4} style={empty}>Nenhuma edição.</td></tr>}
               </tbody>
             </table>
-          )}
+          </div>
+
+          <div style={{ background: "white", border: `1px solid ${BORDER}`, borderRadius: 14, overflow: "hidden", alignSelf: "start" }}>
+            <div style={{ padding: "16px 22px", borderBottom: `1px solid ${BORDER}`, fontFamily: "var(--font-serif)", fontSize: 16, color: INK }}>Nova edição</div>
+            <div style={{ padding: "22px 24px", display: "flex", flexDirection: "column", gap: 12 }}>
+              <Field label="Assunto"><input value={subject} onChange={(e) => setSubject(e.target.value)} style={input} /></Field>
+              <Field label="Corpo"><textarea rows={8} value={bodyText} onChange={(e) => setBodyText(e.target.value)} style={{ ...input, resize: "vertical" }} /></Field>
+              <button disabled={saving} onClick={createEdition}
+                style={{ padding: "10px 16px", background: TEAL, color: "white", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: saving ? "wait" : "pointer", opacity: saving ? 0.6 : 1 }}>
+                {saving ? "Salvando..." : "Criar edição"}
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div style={{ background: "white", border: `1px solid ${BORDER}`, borderRadius: 14, overflow: "hidden" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead><tr style={{ background: BG }}>{["E-mail", "Nome", "Ativo", "Inscrito em", ""].map((h, i) => <th key={i} style={th}>{h}</th>)}</tr></thead>
+            <tbody>
+              {subs.map((s, i) => (
+                <tr key={s.id} style={{ borderTop: i > 0 ? `1px solid ${BORDER}` : "none" }}>
+                  <td style={{ padding: "14px", fontSize: 13, color: INK, fontFamily: "var(--font-mono)" }}>{s.email}</td>
+                  <td style={{ padding: "14px", fontSize: 13, color: INK }}>{s.name ?? "—"}</td>
+                  <td style={{ padding: "14px", fontSize: 11, fontFamily: "var(--font-mono)", color: s.active ? "#047857" : MUTED, fontWeight: 700 }}>{s.active ? "SIM" : "NÃO"}</td>
+                  <td style={{ padding: "14px", fontFamily: "var(--font-mono)", fontSize: 12, color: MUTED }}>{new Date(s.createdAt).toLocaleDateString("pt-BR")}</td>
+                  <td style={{ padding: "14px", textAlign: "right" }}>
+                    <button onClick={() => deleteSub(s.id)} style={btnDanger}>Remover</button>
+                  </td>
+                </tr>
+              ))}
+              {subs.length === 0 && <tr><td colSpan={5} style={empty}>Nenhum inscrito.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const th: React.CSSProperties = { padding: "10px 14px", fontSize: 11, fontFamily: "var(--font-mono)", color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em", textAlign: "left", fontWeight: 600 };
+const input: React.CSSProperties = { padding: "9px 12px", border: `1px solid ${BORDER}`, borderRadius: 8, fontSize: 13, width: "100%", outline: "none", background: BG, color: INK };
+const btn: React.CSSProperties = { padding: "6px 12px", background: "white", color: INK, border: `1px solid ${BORDER}`, borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer" };
+const btnDanger: React.CSSProperties = { ...btn, color: "#c0392b" };
+const empty: React.CSSProperties = { padding: 30, textAlign: "center" as const, color: MUTED, fontSize: 13 };
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label style={{ fontSize: 11, fontFamily: "var(--font-mono)", color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 6, fontWeight: 600 }}>{label}</label>
+      {children}
     </div>
   );
 }

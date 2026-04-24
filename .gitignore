@@ -42,4 +42,8 @@ next-env.d.ts
 
 /src/generated/prisma
 
+# user uploads
+/public/uploads/*
+!/public/uploads/.gitkeep
+
 .vercel

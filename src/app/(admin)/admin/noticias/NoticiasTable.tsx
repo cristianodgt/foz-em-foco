@@ -33,6 +33,14 @@ export type ArticleRow = {
 export default function NoticiasTable({ articles }: { articles: ArticleRow[] }) {
   const router = useRouter();
 
+  async function handleDelete(id: string, title: string, e: React.MouseEvent) {
+    e.stopPropagation();
+    if (!confirm(`Excluir "${title}"?`)) return;
+    const res = await fetch(`/api/admin/articles/${id}`, { method: "DELETE" });
+    if (!res.ok) { alert("Falha ao excluir"); return; }
+    router.refresh();
+  }
+
   return (
     <div style={{ background: "white", border: `1px solid ${BORDER}`, borderRadius: 14, overflow: "hidden", marginBottom: 20 }}>
       <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -101,6 +109,16 @@ export default function NoticiasTable({ articles }: { articles: ArticleRow[] }) 
                   >
                     Editar
                   </Link>
+                  <button
+                    onClick={(e) => handleDelete(a.id, a.title, e)}
+                    style={{
+                      marginLeft: 6, padding: "6px 12px", background: "white", color: "#c0392b",
+                      border: `1px solid ${BORDER}`, borderRadius: 6,
+                      fontSize: 12, fontWeight: 500, cursor: "pointer",
+                    }}
+                  >
+                    Excluir
+                  </button>
                 </td>
               </tr>
             );

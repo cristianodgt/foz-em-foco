@@ -406,6 +406,25 @@ model NewsletterEdition {
   @@map("newsletter_editions")
 }
 
+// ─── Media Library ────────────────────────────────────────────────────────────
+
+model Media {
+  id         String   @id @default(cuid())
+  filename   String
+  url        String
+  mimeType   String
+  size       Int
+  width      Int?
+  height     Int?
+  folder     String   @default("geral")
+  altText    String?
+  createdAt  DateTime @default(now())
+  uploadedBy String?
+
+  @@index([folder])
+  @@map("media")
+}
+
 // ─── Site Config ──────────────────────────────────────────────────────────────
 
 model SiteConfig {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 
 const TEAL = "#0a7a6b";
 const INK = "#111";
@@ -8,176 +8,122 @@ const MUTED = "#6b7280";
 const BORDER = "#e5e7eb";
 const BG = "#fafaf8";
 
-interface Comment {
+type Comment = {
   id: string;
   name: string;
   email: string;
   body: string;
   status: string;
   createdAt: string;
-  article: { title: string; slug: string; category: { slug: string } };
-}
+  article: { id: string; title: string; slug: string } | null;
+};
 
-const FILTERS: Array<{ key: string; label: string }> = [
+const TABS = [
   { key: "pendente", label: "Pendentes" },
   { key: "aprovado", label: "Aprovados" },
   { key: "rejeitado", label: "Rejeitados" },
   { key: "spam", label: "Spam" },
 ];
 
-const STATUS_STYLES: Record<string, { bg: string; fg: string }> = {
-  pendente:  { bg: "#fef3c7", fg: "#92400e" },
-  aprovado:  { bg: "#e6f9f3", fg: "#047857" },
-  rejeitado: { bg: "#fee2e2", fg: "#b91c1c" },
-  spam:      { bg: "#f3f4f6", fg: "#6b7280" },
-};
-
 export default function ComentariosPage() {
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [filter, setFilter] = useState("pendente");
+  const [status, setStatus] = useState("pendente");
+  const [items, setItems] = useState<Comment[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const load = () =>
-    fetch(`/api/comments?status=${filter}`)
-      .then((r) => r.json())
-      .then(setComments)
-      .catch(() => {});
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/admin/comments?status=${status}`);
+      const data = await res.json();
+      setItems(data.items ?? []);
+    } finally { setLoading(false); }
+  }, [status]);
 
-  useEffect(() => { load(); }, [filter]);
+  useEffect(() => { load(); }, [load]);
 
-  const update = async (id: string, status: string) => {
-    await fetch(`/api/comments/${id}`, {
+  async function updateStatus(id: string, newStatus: string) {
+    const res = await fetch(`/api/admin/comments/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ status: newStatus }),
     });
-    setComments((c) => c.filter((x) => x.id !== id));
-  };
+    if (!res.ok) { alert("Falha ao atualizar"); return; }
+    await load();
+  }
 
-  const remove = async (id: string) => {
-    await fetch(`/api/comments/${id}`, { method: "DELETE" });
-    setComments((c) => c.filter((x) => x.id !== id));
-  };
+  async function handleDelete(id: string) {
+    if (!confirm("Excluir comentário?")) return;
+    const res = await fetch(`/api/admin/comments/${id}`, { method: "DELETE" });
+    if (!res.ok) { alert("Falha ao excluir"); return; }
+    await load();
+  }
 
   return (
     <div style={{ background: BG, minHeight: "100vh", padding: "24px 28px" }}>
-      {/* Hero */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24, flexWrap: "wrap", gap: 16 }}>
-        <div>
-          <div style={{ fontFamily: "var(--font-serif)", fontSize: 32, color: INK, lineHeight: 1.1, marginBottom: 4 }}>
-            Comentários
-          </div>
-          <div style={{ fontSize: 13, color: MUTED, fontFamily: "var(--font-mono)" }}>
-            moderação da comunidade · filtro atual: {filter}
-          </div>
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ fontFamily: "var(--font-serif)", fontSize: 32, color: INK, lineHeight: 1.1, marginBottom: 4 }}>
+          Moderação de comentários
+        </div>
+        <div style={{ fontSize: 13, color: MUTED, fontFamily: "var(--font-mono)" }}>
+          {items.length} {status}{items.length !== 1 ? "s" : ""}
         </div>
       </div>
 
-      {/* Filtros toolbar */}
-      <div style={{
-        background: "white", border: `1px solid ${BORDER}`, borderRadius: 10,
-        padding: "12px 16px", display: "flex", gap: 8, alignItems: "center", marginBottom: 16,
-      }}>
-        {FILTERS.map((f) => {
-          const active = filter === f.key;
-          return (
-            <button
-              key={f.key}
-              onClick={() => setFilter(f.key)}
-              style={{
-                padding: "7px 12px", fontSize: 12, fontFamily: "var(--font-mono)",
-                fontWeight: 600, borderRadius: 6, cursor: "pointer",
-                border: `1px solid ${active ? TEAL : BORDER}`,
-                background: active ? TEAL : "white",
-                color: active ? "white" : MUTED,
-              }}
-            >
-              {f.label}
-            </button>
-          );
-        })}
+      <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
+        {TABS.map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setStatus(t.key)}
+            style={{
+              padding: "8px 14px", border: `1px solid ${BORDER}`,
+              borderRadius: 8, background: status === t.key ? TEAL : "white",
+              color: status === t.key ? "white" : INK, fontSize: 12, fontWeight: 600, cursor: "pointer",
+            }}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
-      {/* Lista */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        {comments.map((c) => {
-          const st = STATUS_STYLES[c.status] ?? STATUS_STYLES.pendente;
-          return (
-            <div key={c.id} style={{
-              background: "white", border: `1px solid ${BORDER}`, borderRadius: 14,
-              padding: "18px 22px",
-            }}>
-              <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
-                <div style={{
-                  width: 36, height: 36, borderRadius: "50%",
-                  background: "#e6f9f3", color: TEAL,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontFamily: "var(--font-serif)", fontSize: 15, fontWeight: 700,
-                  flexShrink: 0,
-                }}>
-                  {c.name[0]?.toUpperCase() ?? "?"}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6, flexWrap: "wrap" }}>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: INK }}>{c.name}</span>
-                    <span style={{ fontSize: 11, fontFamily: "var(--font-mono)", color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                      {c.email} · {new Date(c.createdAt).toLocaleDateString("pt-BR")}
-                    </span>
-                    <span style={{
-                      fontSize: 11, fontFamily: "var(--font-mono)", fontWeight: 700,
-                      padding: "3px 8px", borderRadius: 99,
-                      background: st.bg, color: st.fg,
-                    }}>
-                      {c.status.toUpperCase()}
-                    </span>
+      {loading && <div style={{ color: MUTED, fontFamily: "var(--font-mono)", fontSize: 12 }}>Carregando...</div>}
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {items.map((c) => (
+          <div key={c.id} style={{ background: "white", border: `1px solid ${BORDER}`, borderRadius: 12, padding: "16px 20px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8, gap: 12 }}>
+              <div>
+                <div style={{ fontSize: 14, color: INK, fontWeight: 600 }}>{c.name} <span style={{ color: MUTED, fontWeight: 400, fontSize: 12, fontFamily: "var(--font-mono)" }}>· {c.email}</span></div>
+                {c.article && (
+                  <div style={{ fontSize: 11, color: MUTED, fontFamily: "var(--font-mono)", marginTop: 3 }}>
+                    em: {c.article.title}
                   </div>
-                  <div style={{ fontSize: 14, color: INK, lineHeight: 1.5, marginBottom: 8 }}>{c.body}</div>
-                  <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                    em: {c.article?.title ?? "—"}
-                  </div>
-                </div>
-                <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-                  {c.status === "pendente" && (
-                    <button onClick={() => update(c.id, "aprovado")} style={{
-                      padding: "6px 12px", background: TEAL, color: "white",
-                      border: "none", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer",
-                    }}>
-                      Aprovar
-                    </button>
-                  )}
-                  <button onClick={() => update(c.id, "rejeitado")} style={{
-                    padding: "6px 12px", background: "white", color: INK,
-                    border: `1px solid ${BORDER}`, borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: "pointer",
-                  }}>
-                    Rejeitar
-                  </button>
-                  <button onClick={() => remove(c.id)} style={{
-                    padding: "6px 12px", background: "transparent", color: "#b91c1c",
-                    border: "1px solid #fecaca", borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: "pointer",
-                  }}>
-                    Excluir
-                  </button>
-                </div>
+                )}
+              </div>
+              <div style={{ fontSize: 11, color: MUTED, fontFamily: "var(--font-mono)" }}>
+                {new Date(c.createdAt).toLocaleString("pt-BR")}
               </div>
             </div>
-          );
-        })}
-        {comments.length === 0 && (
-          <div style={{
-            background: "white", border: `1px solid ${BORDER}`, borderRadius: 14,
-            padding: "60px 24px", textAlign: "center",
-          }}>
-            <div style={{ width: 48, height: 48, borderRadius: 12, background: "#f3f4f6", margin: "0 auto 14px", display: "flex", alignItems: "center", justifyContent: "center", color: MUTED, fontFamily: "var(--font-serif)", fontSize: 22 }}>
-              —
+            <div style={{ fontSize: 13, color: INK, lineHeight: 1.5, marginBottom: 12 }}>{c.body}</div>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {status !== "aprovado" && <button onClick={() => updateStatus(c.id, "aprovado")} style={{ ...btn, color: TEAL, borderColor: TEAL }}>Aprovar</button>}
+              {status !== "rejeitado" && <button onClick={() => updateStatus(c.id, "rejeitado")} style={btn}>Rejeitar</button>}
+              {status !== "spam" && <button onClick={() => updateStatus(c.id, "spam")} style={btn}>Marcar spam</button>}
+              {status !== "pendente" && <button onClick={() => updateStatus(c.id, "pendente")} style={btn}>Repender</button>}
+              <button onClick={() => handleDelete(c.id)} style={{ ...btn, color: "#c0392b" }}>Excluir</button>
             </div>
-            <div style={{ fontFamily: "var(--font-serif)", fontSize: 20, color: INK, marginBottom: 6 }}>
-              Nenhum comentário
-            </div>
-            <div style={{ fontSize: 13, color: MUTED }}>
-              Não há comentários com status &quot;{filter}&quot; no momento.
-            </div>
+          </div>
+        ))}
+        {items.length === 0 && !loading && (
+          <div style={{ background: "white", border: `1px solid ${BORDER}`, borderRadius: 14, padding: 40, textAlign: "center", color: MUTED, fontSize: 13 }}>
+            Nenhum comentário nesta categoria.
           </div>
         )}
       </div>
     </div>
   );
 }
+
+const btn: React.CSSProperties = {
+  padding: "6px 12px", background: "white", color: INK,
+  border: `1px solid ${BORDER}`, borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer",
+};
